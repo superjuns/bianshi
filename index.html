@@ -187,7 +187,7 @@
             <button class="btn btn-secondary" id="aiRestartBtn">🔁 再玩一次</button>
             <button class="btn" id="aiShareBackBtn" style="margin-top:8px;">🏠 返回首页</button>
         </div>
-        <!-- AI模式专属排行榜卡片（显示个人最佳） -->
+        <!-- AI模式专属排行榜卡片（显示个人最佳，仅前十名） -->
         <div id="aiLeaderboardCard" class="card leaderboard-card">
             <div class="leaderboard-header">
                 <span class="leaderboard-title">🏆 荣耀排行榜（个人最佳）</span>
@@ -235,7 +235,7 @@
     
     let whitelist = [];
     
-    // ================= 排行榜相关（个人最佳） =================
+    // ================= 排行榜相关（个人最佳，仅显示前10名） =================
     async function fetchLeaderboardData() {
         try {
             const response = await fetch(LEADERBOARD_API);
@@ -249,9 +249,8 @@
         }
     }
     
-    // 获取个人最佳：按班级+姓名分组，每组取最佳（score最大，score相同时用时最小，用时相同时取提交时间最早）
     function getPersonalBest(submissions) {
-        const bestMap = new Map(); // key: `${class}|${name}`
+        const bestMap = new Map();
         for (const sub of submissions) {
             const className = sub.class || '';
             const studentName = sub.name || '';
@@ -259,8 +258,6 @@
             const key = `${className}|${studentName}`;
             const currentScore = sub.score !== undefined ? sub.score : 0;
             const total = sub.total || 5;
-            const currentRate = currentScore / total;
-            // 转换时间为秒数
             const timeStr = sub.time || "00:00";
             let seconds = 0;
             if (timeStr.includes(':')) {
@@ -272,35 +269,20 @@
             const submittedAt = sub.submitted_at ? new Date(sub.submitted_at).getTime() : 0;
             
             if (!bestMap.has(key)) {
-                bestMap.set(key, {
-                    class: className,
-                    name: studentName,
-                    score: currentScore,
-                    total: total,
-                    time: timeStr,
-                    seconds: seconds,
-                    submittedAt: submittedAt,
-                    rate: currentRate
-                });
+                bestMap.set(key, { class: className, name: studentName, score: currentScore, total: total, time: timeStr, seconds: seconds, submittedAt: submittedAt });
             } else {
                 const existing = bestMap.get(key);
-                // 比较分数
                 if (currentScore > existing.score) {
-                    bestMap.set(key, { class: className, name: studentName, score: currentScore, total: total, time: timeStr, seconds: seconds, submittedAt: submittedAt, rate: currentRate });
+                    bestMap.set(key, { class: className, name: studentName, score: currentScore, total: total, time: timeStr, seconds: seconds, submittedAt: submittedAt });
                 } else if (currentScore === existing.score) {
-                    // 分数相同，比较用时（秒数少者优）
                     if (seconds < existing.seconds) {
-                        bestMap.set(key, { class: className, name: studentName, score: currentScore, total: total, time: timeStr, seconds: seconds, submittedAt: submittedAt, rate: currentRate });
-                    } else if (seconds === existing.seconds) {
-                        // 用时相同，比较提交时间（早者优）
-                        if (submittedAt < existing.submittedAt) {
-                            bestMap.set(key, { class: className, name: studentName, score: currentScore, total: total, time: timeStr, seconds: seconds, submittedAt: submittedAt, rate: currentRate });
-                        }
+                        bestMap.set(key, { class: className, name: studentName, score: currentScore, total: total, time: timeStr, seconds: seconds, submittedAt: submittedAt });
+                    } else if (seconds === existing.seconds && submittedAt < existing.submittedAt) {
+                        bestMap.set(key, { class: className, name: studentName, score: currentScore, total: total, time: timeStr, seconds: seconds, submittedAt: submittedAt });
                     }
                 }
             }
         }
-        // 转换为数组并排序：按得分降序，得分相同则按用时升序
         const bestList = Array.from(bestMap.values());
         bestList.sort((a, b) => {
             if (a.score !== b.score) return b.score - a.score;
@@ -324,7 +306,8 @@
             container.innerHTML = '<div class="empty-rank">暂无闯关记录，快来成为第一个吧！</div>';
             return;
         }
-        const topList = bestList.slice(0, 15);
+        // 只显示前十名
+        const topList = bestList.slice(0, 10);
         let html = `<table class="rank-table">
             <thead>
                 <tr><th>🏅</th><th>班级</th><th>姓名</th><th>得分</th><th>用时</th>
@@ -346,8 +329,8 @@
             </tr>`;
         });
         html += `</tbody></table>`;
-        if (bestList.length > 15) {
-            html += `<div style="font-size:0.65rem; text-align:center; margin-top:6px; color:#7895b2;">仅展示前15名，共${bestList.length}人</div>`;
+        if (bestList.length > 10) {
+            html += `<div style="font-size:0.65rem; text-align:center; margin-top:6px; color:#7895b2;">仅展示前10名，共${bestList.length}人</div>`;
         }
         container.innerHTML = html;
     }
@@ -564,7 +547,7 @@
         return text;
     }
     
-    // ================= 离线模式逻辑 =================
+    // ================= 离线模式逻辑（修复无法选中选项问题） =================
     let offlineQuestions=[], offlineUserAnswers=[], offlineCurrentIdx=0, offlineActive=true, offlineCurrentSelected="", offlineIsCorrectSubmitted=false;
     let offlineUtterance = null;
     
@@ -619,6 +602,7 @@
         window.speechSynthesis.speak(u);
     }
     
+    // 离线模式渲染选项（使用事件委托，避免重复绑定）
     async function renderOfflineQuestion() {
         const q = offlineQuestions[offlineCurrentIdx];
         const stem = getOfflineStem(q);
@@ -633,22 +617,39 @@
         }
         const container = document.getElementById("offlineOptionsContainer");
         container.innerHTML = "";
-        offlineCurrentSelected = offlineUserAnswers[offlineCurrentIdx] || '';
+        const selectedLetter = offlineUserAnswers[offlineCurrentIdx] || '';
         opts.forEach(opt => {
             const div = document.createElement("div");
-            div.className = `option ${offlineCurrentSelected === opt.letter ? 'selected' : ''} ${offlineIsCorrectSubmitted ? 'disabled' : ''}`;
+            div.className = `option ${selectedLetter === opt.letter ? 'selected' : ''}`;
+            if (offlineIsCorrectSubmitted) div.classList.add("disabled");
+            div.setAttribute("data-letter", opt.letter);
             div.innerHTML = `<span class="option-prefix">${opt.letter}</span><span class="option-text">${escapeHtml(opt.text)}</span>`;
-            if (!offlineIsCorrectSubmitted) {
-                div.onclick = () => {
-                    offlineCurrentSelected = opt.letter;
-                    renderOfflineQuestion();
-                };
-            }
             container.appendChild(div);
         });
         document.getElementById("offlineSubmitBtn").disabled = offlineIsCorrectSubmitted;
         document.getElementById("offlineRefreshBtn").disabled = offlineIsCorrectSubmitted;
     }
+    
+    // 事件委托处理选项点击
+    document.getElementById("offlineOptionsContainer")?.addEventListener("click", (e) => {
+        if (!offlineActive || offlineIsCorrectSubmitted) return;
+        let target = e.target;
+        while (target && target !== e.currentTarget && !target.classList?.contains("option")) {
+            target = target.parentElement;
+        }
+        if (!target || !target.classList.contains("option")) return;
+        const letter = target.getAttribute("data-letter");
+        if (letter) {
+            offlineCurrentSelected = letter;
+            // 更新视图：高亮当前选中项
+            const container = document.getElementById("offlineOptionsContainer");
+            Array.from(container.querySelectorAll(".option")).forEach(opt => {
+                if (opt.getAttribute("data-letter") === letter) opt.classList.add("selected");
+                else opt.classList.remove("selected");
+            });
+            offlineUserAnswers[offlineCurrentIdx] = letter;
+        }
+    });
     
     async function offlineSubmit() {
         if (!offlineActive || offlineIsCorrectSubmitted) return;
@@ -743,7 +744,7 @@
         offlineIsCorrectSubmitted = false;
         offlineCurrentSelected = "";
         offlineQuestions = await buildOfflineGame();
-        renderOfflineQuestion();
+        await renderOfflineQuestion();
         document.getElementById("offlineFeedback").classList.add("hide");
         document.getElementById("offlineSubmitBtn").disabled = false;
         document.getElementById("offlineRefreshBtn").disabled = false;
@@ -760,10 +761,10 @@
     document.getElementById("offlineRestartBtn")?.addEventListener("click", offlineRestart);
     (async () => {
         offlineQuestions = await buildOfflineGame();
-        renderOfflineQuestion();
+        await renderOfflineQuestion();
     })();
     
-    // ================= AI 模式逻辑（包含统一ID + 学情反馈） =================
+    // ================= AI 模式逻辑（简化，保持原有功能） =================
     let aiQuestions=[], aiUserAnswers=[], aiCurrentIdx=0, aiStartTimestamp=null, aiTimerInt=null, aiActive=false, aiSelectedClass="", aiStudentName="";
     let aiUtterance = null;
     const VARIANT_MODES=["情境转换","数据修改","跨学科","提升难度","降低难度","综合变化"];
@@ -774,16 +775,8 @@
         const d=await r.json(); 
         return d.submissions.map((s,idx)=>{
             let originalId = s.originalId;
-            if (!originalId) {
-                originalId = generateOriginalId(s.text, s.gradeVersion, s.unit);
-            }
-            return {
-                id: s._ip || `q_${idx}`,
-                text: s.text || "错题",
-                gradeVersion: s.gradeVersion || '',
-                unit: s.unit || '',
-                originalId: originalId
-            };
+            if (!originalId) originalId = generateOriginalId(s.text, s.gradeVersion, s.unit);
+            return { id: s._ip || `q_${idx}`, text: s.text || "错题", gradeVersion: s.gradeVersion || '', unit: s.unit || '', originalId: originalId };
         }); 
     }
     
@@ -800,12 +793,7 @@
         let cleanedText = cleanQuestionTextForDisplay(raw);
         if (!cleanedText) cleanedText = raw.replace(/[【\[]答案[】\]]\s*[A-C]/gi, '').trim();
         cleanedText = sanitizeMathText(cleanedText);
-        return {
-            id:`v_${Date.now()}_${Math.random()}`, 
-            text:cleanedText, 
-            correctAnswer:correct, 
-            originalId: original.originalId
-        }; 
+        return { id:`v_${Date.now()}_${Math.random()}`, text:cleanedText, correctAnswer:correct, originalId: original.originalId }; 
     }
     
     async function buildAiQuestions(){ 
@@ -888,9 +876,7 @@
             const stdAns = q.correctAnswer || 'A';
             const isCorrect = (userAns === stdAns);
             if(isCorrect) correct++; 
-            if (q.originalId) {
-                originalResults.push({ originalId: q.originalId, isCorrect: isCorrect });
-            }
+            if (q.originalId) originalResults.push({ originalId: q.originalId, isCorrect: isCorrect });
             const fullText = formatFullQuestion(q);
             const statusClass = isCorrect ? 'correct' : 'wrong';
             const statusText = isCorrect ? '✓ 正确' : '✗ 错误';
@@ -912,9 +898,7 @@
         await uploadScore(aiSelectedClass,aiStudentName,aiUserAnswers,correct,aiQuestions.length,timeStr); 
         incrementAttempts(aiSelectedClass,aiStudentName);
         await refreshAiLeaderboard();
-        if (originalResults.length) {
-            await reportAiFeedback(aiSelectedClass, aiStudentName, originalResults);
-        }
+        if (originalResults.length) await reportAiFeedback(aiSelectedClass, aiStudentName, originalResults);
     }
     
     async function aiStartChallenge(){ 
@@ -922,7 +906,8 @@
         const name=document.getElementById("studentName").value.trim(); 
         if(!name){alert("填姓名");return;} 
         if(!isInWhitelist(className,name)){ 
-            const w=document.getElementById("aiStartWarning"); w.classList.remove("hide"); w.innerHTML=`⛔ 认证失败：您（${className}·${name}）不在白名单内`; return; 
+            document.getElementById("aiStartWarning").classList.remove("hide"); 
+            document.getElementById("aiStartWarning").innerHTML=`⛔ 认证失败：您（${className}·${name}）不在白名单内`; return; 
         } 
         if(getAttemptsCount(className,name)>=DAILY_LIMIT){ 
             document.getElementById("aiStartWarning").innerHTML=`⛔ 今日已达上限${DAILY_LIMIT}次`; return; 
