@@ -187,10 +187,10 @@
             <button class="btn btn-secondary" id="aiRestartBtn">🔁 再玩一次</button>
             <button class="btn" id="aiShareBackBtn" style="margin-top:8px;">🏠 返回首页</button>
         </div>
-        <!-- AI模式专属排行榜卡片 -->
+        <!-- AI模式专属排行榜卡片（显示个人最佳） -->
         <div id="aiLeaderboardCard" class="card leaderboard-card">
             <div class="leaderboard-header">
-                <span class="leaderboard-title">🏆 荣耀排行榜</span>
+                <span class="leaderboard-title">🏆 荣耀排行榜（个人最佳）</span>
                 <button class="refresh-btn" id="aiRefreshLeaderboardBtn">🔄 刷新</button>
             </div>
             <div id="aiLeaderboardContent"><div class="empty-rank">加载中...</div></div>
@@ -231,12 +231,11 @@
     const WHITELIST_API_URL = "https://quickform.cn/api/5tmbx2o6rg";
     const WHITELIST_API_ALL_URL = "https://quickform.cn/api/5tmbx2o6rg/all";
     const WHITELIST_API_CLEAR_URL = "https://quickform.cn/api/5tmbx2o6rg/clear";
-    // 学情反馈接口地址（教师端统计使用）
     const FEEDBACK_API_URL = "https://quickform.cn/api/srnos93opr";
     
     let whitelist = [];
     
-    // ================= 排行榜相关 =================
+    // ================= 排行榜相关（个人最佳） =================
     async function fetchLeaderboardData() {
         try {
             const response = await fetch(LEADERBOARD_API);
@@ -250,6 +249,66 @@
         }
     }
     
+    // 获取个人最佳：按班级+姓名分组，每组取最佳（score最大，score相同时用时最小，用时相同时取提交时间最早）
+    function getPersonalBest(submissions) {
+        const bestMap = new Map(); // key: `${class}|${name}`
+        for (const sub of submissions) {
+            const className = sub.class || '';
+            const studentName = sub.name || '';
+            if (!className || !studentName) continue;
+            const key = `${className}|${studentName}`;
+            const currentScore = sub.score !== undefined ? sub.score : 0;
+            const total = sub.total || 5;
+            const currentRate = currentScore / total;
+            // 转换时间为秒数
+            const timeStr = sub.time || "00:00";
+            let seconds = 0;
+            if (timeStr.includes(':')) {
+                const parts = timeStr.split(':');
+                seconds = parseInt(parts[0]) * 60 + parseInt(parts[1]);
+            } else {
+                seconds = 99999;
+            }
+            const submittedAt = sub.submitted_at ? new Date(sub.submitted_at).getTime() : 0;
+            
+            if (!bestMap.has(key)) {
+                bestMap.set(key, {
+                    class: className,
+                    name: studentName,
+                    score: currentScore,
+                    total: total,
+                    time: timeStr,
+                    seconds: seconds,
+                    submittedAt: submittedAt,
+                    rate: currentRate
+                });
+            } else {
+                const existing = bestMap.get(key);
+                // 比较分数
+                if (currentScore > existing.score) {
+                    bestMap.set(key, { class: className, name: studentName, score: currentScore, total: total, time: timeStr, seconds: seconds, submittedAt: submittedAt, rate: currentRate });
+                } else if (currentScore === existing.score) {
+                    // 分数相同，比较用时（秒数少者优）
+                    if (seconds < existing.seconds) {
+                        bestMap.set(key, { class: className, name: studentName, score: currentScore, total: total, time: timeStr, seconds: seconds, submittedAt: submittedAt, rate: currentRate });
+                    } else if (seconds === existing.seconds) {
+                        // 用时相同，比较提交时间（早者优）
+                        if (submittedAt < existing.submittedAt) {
+                            bestMap.set(key, { class: className, name: studentName, score: currentScore, total: total, time: timeStr, seconds: seconds, submittedAt: submittedAt, rate: currentRate });
+                        }
+                    }
+                }
+            }
+        }
+        // 转换为数组并排序：按得分降序，得分相同则按用时升序
+        const bestList = Array.from(bestMap.values());
+        bestList.sort((a, b) => {
+            if (a.score !== b.score) return b.score - a.score;
+            return a.seconds - b.seconds;
+        });
+        return bestList;
+    }
+    
     function getMedalSymbol(rank) {
         if (rank === 1) return "🏅";
         if (rank === 2) return "🥈";
@@ -260,24 +319,12 @@
     function renderLeaderboard(submissions, containerId) {
         const container = document.getElementById(containerId);
         if (!container) return;
-        if (!submissions || submissions.length === 0) {
+        const bestList = getPersonalBest(submissions);
+        if (!bestList || bestList.length === 0) {
             container.innerHTML = '<div class="empty-rank">暂无闯关记录，快来成为第一个吧！</div>';
             return;
         }
-        const sorted = [...submissions].sort((a, b) => {
-            if (a.score !== b.score) return (b.score || 0) - (a.score || 0);
-            const timeToSec = (t) => {
-                if (!t) return 99999;
-                const parts = t.split(':');
-                if (parts.length === 2) return parseInt(parts[0]) * 60 + parseInt(parts[1]);
-                return 99999;
-            };
-            const timeA = timeToSec(a.time);
-            const timeB = timeToSec(b.time);
-            if (timeA !== timeB) return timeA - timeB;
-            return new Date(a.submitted_at) - new Date(b.submitted_at);
-        });
-        const topList = sorted.slice(0, 15);
+        const topList = bestList.slice(0, 15);
         let html = `<table class="rank-table">
             <thead>
                 <tr><th>🏅</th><th>班级</th><th>姓名</th><th>得分</th><th>用时</th>
@@ -288,7 +335,7 @@
             const medal = getMedalSymbol(rank);
             const displayName = escapeHtml(item.name) || "匿名";
             const displayClass = escapeHtml(item.class) || "未知";
-            const score = item.score !== undefined ? `${item.score}/${item.total || 5}` : "0/5";
+            const score = `${item.score}/${item.total || 5}`;
             const timeUsed = item.time || "--:--";
             html += `<tr style="background:white;">
                 <td style="font-weight:500; font-size:1rem;">${medal}</td>
@@ -299,8 +346,8 @@
             </tr>`;
         });
         html += `</tbody></table>`;
-        if (submissions.length > 15) {
-            html += `<div style="font-size:0.65rem; text-align:center; margin-top:6px; color:#7895b2;">仅展示前15名，共${submissions.length}条</div>`;
+        if (bestList.length > 15) {
+            html += `<div style="font-size:0.65rem; text-align:center; margin-top:6px; color:#7895b2;">仅展示前15名，共${bestList.length}人</div>`;
         }
         container.innerHTML = html;
     }
@@ -722,13 +769,11 @@
     const VARIANT_MODES=["情境转换","数据修改","跨学科","提升难度","降低难度","综合变化"];
     function getRandomModes(){ const shuffled=[...VARIANT_MODES]; for(let i=shuffled.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1));[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]]; } return shuffled.slice(0,Math.floor(Math.random()*2)+1); }
     
-    // 从API获取错题数据，并确保每条记录都有 originalId
     async function fetchMistakes(){ 
         const r=await fetch(`${API_BASE}/all`); 
         const d=await r.json(); 
         return d.submissions.map((s,idx)=>{
             let originalId = s.originalId;
-            // 如果后端没有返回originalId，则基于题目内容、年级和单元生成统一ID
             if (!originalId) {
                 originalId = generateOriginalId(s.text, s.gradeVersion, s.unit);
             }
@@ -755,7 +800,6 @@
         let cleanedText = cleanQuestionTextForDisplay(raw);
         if (!cleanedText) cleanedText = raw.replace(/[【\[]答案[】\]]\s*[A-C]/gi, '').trim();
         cleanedText = sanitizeMathText(cleanedText);
-        // 传递原题的 originalId，确保学情数据能够匹配
         return {
             id:`v_${Date.now()}_${Math.random()}`, 
             text:cleanedText, 
@@ -779,21 +823,11 @@
     function stopAiTimer(){ if(aiTimerInt){ clearInterval(aiTimerInt); aiTimerInt=null; } }
     async function uploadScore(c,n,answers,score,total,time){ try{ await fetch("https://quickform.cn/api/bj2awrwmfp",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({class:c,name:n,answers,score,total,time})}); }catch(e){} }
     
-    // 学情反馈（直接调用教师端统计接口）
     async function reportAiFeedback(className, studentName, originalResults) {
         if (!originalResults || originalResults.length === 0) return;
-        const payload = { 
-            class: className, 
-            name: studentName, 
-            timestamp: new Date().toISOString(), 
-            feedback: originalResults 
-        };
+        const payload = { class: className, name: studentName, timestamp: new Date().toISOString(), feedback: originalResults };
         try {
-            const response = await fetch(FEEDBACK_API_URL, { 
-                method: "POST", 
-                headers: { "Content-Type": "application/json" }, 
-                body: JSON.stringify(payload) 
-            });
+            const response = await fetch(FEEDBACK_API_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             console.log("✅ 原题正确率反馈成功");
         } catch (error) {
@@ -847,14 +881,13 @@
         const elapsed=Math.floor((Date.now()-aiStartTimestamp)/1000); 
         const timeStr=`${Math.floor(elapsed/60).toString().padStart(2,'0')}:${(elapsed%60).toString().padStart(2,'0')}`; 
         let correct=0; const detailsHtml = [];
-        const originalResults = []; // 收集每道题的原题ID及学生是否正确
+        const originalResults = [];
         for(let i=0;i<aiQuestions.length;i++){ 
             const q = aiQuestions[i];
             const userAns = aiUserAnswers[i] || '（未作答）';
             const stdAns = q.correctAnswer || 'A';
             const isCorrect = (userAns === stdAns);
             if(isCorrect) correct++; 
-            // 收集学情反馈数据
             if (q.originalId) {
                 originalResults.push({ originalId: q.originalId, isCorrect: isCorrect });
             }
@@ -879,7 +912,6 @@
         await uploadScore(aiSelectedClass,aiStudentName,aiUserAnswers,correct,aiQuestions.length,timeStr); 
         incrementAttempts(aiSelectedClass,aiStudentName);
         await refreshAiLeaderboard();
-        // 反馈学情数据到教师端统计接口
         if (originalResults.length) {
             await reportAiFeedback(aiSelectedClass, aiStudentName, originalResults);
         }
