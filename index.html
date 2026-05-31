@@ -9,7 +9,8 @@
             tex: {
                 inlineMath: [['$', '$'], ['\\(', '\\)']],
                 displayMath: [['$$', '$$'], ['\\[', '\\]']],
-                processEscapes: true
+                processEscapes: true,
+                packages: {'[+]': ['ams', 'base']}
             },
             options: {
                 ignoreHtmlClass: 'no-mathjax',
@@ -306,6 +307,10 @@
             container.innerHTML = '<div class="empty-rank">暂无闯关记录，快来成为第一个吧！</div>';
             return;
         }
+        // 计算全对人数：个人最佳成绩中 score === total 的人数
+        const totalPerGame = 5; // 每题5道
+        const perfectCount = bestList.filter(item => item.score === totalPerGame).length;
+        
         // 只显示前十名
         const topList = bestList.slice(0, 10);
         let html = `<table class="rank-table">
@@ -328,10 +333,12 @@
                 <td style="font-size:0.7rem;">${timeUsed}</td>
             </tr>`;
         });
-        html += `</tbody></table>`;
+        html += `</tbody></td>`;
         if (bestList.length > 10) {
             html += `<div style="font-size:0.65rem; text-align:center; margin-top:6px; color:#7895b2;">仅展示前10名，共${bestList.length}人</div>`;
         }
+        // 增加全对人数统计
+        html += `<div style="font-size:0.65rem; text-align:center; margin-top:8px; color:#7895b2;">🎉 全对人数: ${perfectCount} 人</div>`;
         container.innerHTML = html;
     }
     
@@ -493,36 +500,74 @@
     
     function escapeHtml(str){ if(!str) return ''; return str.replace(/[&<>]/g, m => m==='&'?'&amp;':m==='<'?'&lt;':'&gt;'); }
     
+    // ================= 增强的文本清理函数：修复所有特殊LaTeX命令、孤立的 $$、空括号等异常显示 =================
     function sanitizeMathText(rawText) {
         if (!rawText) return '';
         let text = rawText;
-        text = text.replace(/&#36;/g, '');
-        text = text.replace(/\$/g, '');
-        text = text.replace(/[¥€£]/g, '');
-        text = text.replace(/\\）/g, '\\)');
-        text = text.replace(/\\（/g, '\\(');
-        let balance = 0;
-        let result = [];
-        let i = 0;
-        while (i < text.length) {
-            if (text.substr(i, 2) === '\\(') {
-                balance++;
-                result.push('\\(');
-                i += 2;
-            } else if (text.substr(i, 2) === '\\)') {
-                balance--;
-                result.push('\\)');
-                i += 2;
-            } else {
-                result.push(text[i]);
-                i++;
-            }
-        }
-        text = result.join('');
-        if (balance !== 0) {
-            text = text.replace(/\\\(/g, '').replace(/\\\)/g, '');
-        }
+        // 1. 处理 \text{...} 等命令，提取内部文本
+        text = text.replace(/\\text\{([^}]*)\}/g, '$1');
+        text = text.replace(/\\mathrm\{([^}]*)\}/g, '$1');
+        text = text.replace(/\\mathbf\{([^}]*)\}/g, '$1');
+        text = text.replace(/\\mathit\{([^}]*)\}/g, '$1');
+        text = text.replace(/\\textbf\{([^}]*)\}/g, '$1');
+        text = text.replace(/\\textit\{([^}]*)\}/g, '$1');
+        // 2. 处理 \boxed{...} 变为 □ ... □
+        text = text.replace(/\\boxed\{([^}]*)\}/g, '□ $1 □');
+        // 3. 删除各种间距命令
+        text = text.replace(/\\quad/g, ' ');
+        text = text.replace(/\\qquad/g, '  ');
+        text = text.replace(/\\;/g, ' ');
+        text = text.replace(/\\:/g, ' ');
+        text = text.replace(/\\!/g, '');
+        text = text.replace(/\\thinspace/g, ' ');
+        text = text.replace(/\\negthinspace/g, '');
+        text = text.replace(/\\enspace/g, ' ');
+        text = text.replace(/\\space/g, ' ');
+        text = text.replace(/\\hspace\{[^}]*\}/g, ' ');
+        // 4. 处理特殊符号
+        text = text.replace(/\\square/g, '□');
+        text = text.replace(/\\Box/g, '□');
+        text = text.replace(/\\blacksquare/g, '■');
+        // 5. 删除无用的 LaTeX 环境标记
+        text = text.replace(/\\label\{[^}]*\}/g, '');
+        text = text.replace(/\\tag\{[^}]*\}/g, '');
+        text = text.replace(/\\ref\{[^}]*\}/g, '');
+        text = text.replace(/\\begin\{[^}]*\}/g, '');
+        text = text.replace(/\\end\{[^}]*\}/g, '');
+        text = text.replace(/\\displaystyle/g, '');
+        text = text.replace(/\\textstyle/g, '');
+        text = text.replace(/\\scriptstyle/g, '');
+        text = text.replace(/\\limits/g, '');
+        // 6. 处理孤立的 $ 和 $$（删除它们，但保留可能被 MathJax 需要的公式环境）
+        // 注意：MathJax 会处理成对的 $...$，但这里我们为了显示干净，将所有单独的 $ 删除，
+        // 但保留成对的 $...$ 内部内容（实际上我们不需要保留 $，直接删除 $ 符号即可，因为之前没有删除）
+        text = text.replace(/\$\$([\s\S]*?)\$\$/g, '$1');   // 删除 $$...$$ 但保留内容
+        text = text.replace(/\$([^\$]+?)\$/g, '$1');       // 删除 $...$ 但保留内容
+        text = text.replace(/\$/g, '');                    // 删除残余的 $
+        // 7. 处理 \\( 和 \\) 转换为普通括号（避免 MathJax 错误解析）
+        text = text.replace(/\\\(/g, '(');
+        text = text.replace(/\\\)/g, ')');
+        text = text.replace(/\\\[/g, '[');
+        text = text.replace(/\\\]/g, ']');
+        // 8. 修复形如 "=（ ）" 或 "= ( )" 或 "= ( )?" 等空括号的情况，替换为 "= □"
+        text = text.replace(/=\s*\(\s*\)\s*/g, '= □ ');
+        text = text.replace(/=\s*\[[\s]*\]\s*/g, '= □ ');
+        text = text.replace(/=\s*\{\s*\}\s*/g, '= □ ');
+        // 9. 修复形如 "= (  )" 中间可能有空白
+        text = text.replace(/=\s*\([\s　]*\)\s*/g, '= □ ');
+        // 10. 处理可能残留的 \square 已经被替换为 □，但为了更自然，可进一步调整
+        // 11. 删除所有未知的反斜杠命令（保留数学命令如 frac, sqrt 等）
+        text = text.replace(/\\([a-zA-Z]+)/g, (match, cmd) => {
+            const keepCommands = ['frac', 'sqrt', 'sum', 'int', 'prod', 'alpha', 'beta', 'gamma', 'delta', 'pi', 'theta', 'lambda', 'sigma', 'omega', 'leq', 'geq', 'neq', 'approx', 'times', 'div', 'pm', 'mp', 'cdot', 'ldots', 'cdots', 'vdots', 'ddots', 'partial', 'infty', 'emptyset', 'forall', 'exists', 'in', 'notin', 'subset', 'supset', 'cup', 'cap', 'land', 'lor', 'neg', 'implies', 'leftrightarrow', 'rightarrow', 'leftarrow', 'uparrow', 'downarrow'];
+            if (keepCommands.includes(cmd)) return match;
+            return '';
+        });
+        // 12. 清理零宽字符、多余空格
         text = text.replace(/[\u200B-\u200D\uFEFF]/g, '');
+        text = text.replace(/\s+/g, ' ').trim();
+        // 13. 修复形如 "88 - = 54" 或 "88 - □ = 54" 等（AI可能生成 -□= 的情况）
+        text = text.replace(/-\s*□\s*=/g, '- □ =');
+        text = text.replace(/-\s*=\s*(\d+)/g, '- □ = $1');
         return text;
     }
     
@@ -540,6 +585,14 @@
         return text;
     }
     
+    function cleanOptionText(optionText) {
+        if (!optionText) return '';
+        let cleaned = cleanQuestionTextForDisplay(optionText);
+        // 移除可能残留的 $ 符号（防止显示时出现多余$）
+        cleaned = cleaned.replace(/\$([^\$]+?)\$/g, (match, content) => content);
+        return cleaned;
+    }
+    
     function formatFullQuestion(q) {
         let text = q.text || '';
         text = cleanQuestionTextForDisplay(text);
@@ -547,14 +600,14 @@
         return text;
     }
     
-    // ================= 离线模式逻辑（修复无法选中选项问题） =================
+    // ================= 离线模式逻辑 =================
     let offlineQuestions=[], offlineUserAnswers=[], offlineCurrentIdx=0, offlineActive=true, offlineCurrentSelected="", offlineIsCorrectSubmitted=false;
     let offlineUtterance = null;
     
     function getOfflineStem(q) { 
         let stem = q.text.replace(/[A-C][\.\、][^A-C]*/gi,'').trim(); 
         if(!stem) stem = q.text; 
-        return sanitizeMathText(stem);
+        return cleanQuestionTextForDisplay(stem);
     }
     
     async function fetchOfflineBank(){ const r=await fetch(`${API_BASE}/all`); const d=await r.json(); return d.submissions.map(s=>({id:s._ip||`off_${Date.now()}`,text:s.text||"无文本",correctAnswer:s.correct_answer||"A"})); }
@@ -602,7 +655,6 @@
         window.speechSynthesis.speak(u);
     }
     
-    // 离线模式渲染选项（使用事件委托，避免重复绑定）
     async function renderOfflineQuestion() {
         const q = offlineQuestions[offlineCurrentIdx];
         const stem = getOfflineStem(q);
@@ -611,7 +663,7 @@
         let opts = [];
         const matches = q.text.match(/([A-C])[\.\、]\s*([^A-C]*?)(?=[A-C]|$)/gi);
         if (matches && matches.length >= 3) {
-            opts = matches.map(m => ({ letter: m[0], text: sanitizeMathText(m.substring(2).trim()) }));
+            opts = matches.map(m => ({ letter: m[0], text: cleanOptionText(m.substring(2).trim()) }));
         } else {
             opts = [{ letter: 'A', text: '正确' }, { letter: 'B', text: '错误' }, { letter: 'C', text: '不确定' }];
         }
@@ -630,7 +682,6 @@
         document.getElementById("offlineRefreshBtn").disabled = offlineIsCorrectSubmitted;
     }
     
-    // 事件委托处理选项点击
     document.getElementById("offlineOptionsContainer")?.addEventListener("click", (e) => {
         if (!offlineActive || offlineIsCorrectSubmitted) return;
         let target = e.target;
@@ -641,7 +692,6 @@
         const letter = target.getAttribute("data-letter");
         if (letter) {
             offlineCurrentSelected = letter;
-            // 更新视图：高亮当前选中项
             const container = document.getElementById("offlineOptionsContainer");
             Array.from(container.querySelectorAll(".option")).forEach(opt => {
                 if (opt.getAttribute("data-letter") === letter) opt.classList.add("selected");
@@ -764,7 +814,7 @@
         await renderOfflineQuestion();
     })();
     
-    // ================= AI 模式逻辑（简化，保持原有功能） =================
+    // ================= AI 模式逻辑 =================
     let aiQuestions=[], aiUserAnswers=[], aiCurrentIdx=0, aiStartTimestamp=null, aiTimerInt=null, aiActive=false, aiSelectedClass="", aiStudentName="";
     let aiUtterance = null;
     const VARIANT_MODES=["情境转换","数据修改","跨学科","提升难度","降低难度","综合变化"];
@@ -839,7 +889,11 @@
         aiUtterance=u; window.speechSynthesis.speak(u);
     }
     
-    function getAiStem(q) { let stem = q.text.replace(/[A-C][\.\、][^A-C]*/gi,'').trim(); if (!stem) stem = q.text; return sanitizeMathText(stem); }
+    function getAiStem(q) { 
+        let stem = q.text.replace(/[A-C][\.\、][^A-C]*/gi,'').trim(); 
+        if (!stem) stem = q.text; 
+        return cleanQuestionTextForDisplay(stem);
+    }
     
     async function renderAiQuestion() { 
         const q = aiQuestions[aiCurrentIdx]; 
@@ -848,8 +902,11 @@
         await MathJax.typesetPromise([document.getElementById("aiQuestionText")]); 
         let opts = [];
         const matches = q.text.match(/([A-C])[\.\、]\s*([^A-C]*?)(?=[A-C]|$)/gi);
-        if (matches && matches.length >= 3) opts = matches.map(m => ({ letter: m[0], text: sanitizeMathText(m.substring(2).trim()) }));
-        else opts = [{ letter: 'A', text: '选项A' }, { letter: 'B', text: '选项B' }, { letter: 'C', text: '选项C' }];
+        if (matches && matches.length >= 3) {
+            opts = matches.map(m => ({ letter: m[0], text: cleanOptionText(m.substring(2).trim()) }));
+        } else {
+            opts = [{ letter: 'A', text: '选项A' }, { letter: 'B', text: '选项B' }, { letter: 'C', text: '选项C' }];
+        }
         const area = document.getElementById("aiAnswerArea");
         area.innerHTML = "";
         const saved = aiUserAnswers[aiCurrentIdx] || '';
