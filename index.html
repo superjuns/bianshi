@@ -531,6 +531,42 @@
         text = text.replace(/\\textstyle/g, '');
         text = text.replace(/\\scriptstyle/g, '');
         text = text.replace(/\\limits/g, '');
+        // 替换常见 LaTeX 符号为直观 Unicode 符号
+        text = text.replace(/\\times/g, '×');
+        text = text.replace(/\\div/g, '÷');
+        text = text.replace(/\\pm/g, '±');
+        text = text.replace(/\\mp/g, '∓');
+        text = text.replace(/\\cdot/g, '·');
+        text = text.replace(/\\le/g, '≤');
+        text = text.replace(/\\ge/g, '≥');
+        text = text.replace(/\\neq/g, '≠');
+        text = text.replace(/\\approx/g, '≈');
+        text = text.replace(/\\infty/g, '∞');
+        text = text.replace(/\\emptyset/g, '∅');
+        text = text.replace(/\\forall/g, '∀');
+        text = text.replace(/\\exists/g, '∃');
+        text = text.replace(/\\to/g, '→');
+        text = text.replace(/\\rightarrow/g, '→');
+        text = text.replace(/\\leftarrow/g, '←');
+        text = text.replace(/\\Rightarrow/g, '⇒');
+        text = text.replace(/\\Leftarrow/g, '⇐');
+        text = text.replace(/\\mapsto/g, '↦');
+        text = text.replace(/\\star/g, '⋆');
+        text = text.replace(/\\otimes/g, '⊗');
+        text = text.replace(/\\oplus/g, '⊕');
+        text = text.replace(/\\cap/g, '∩');
+        text = text.replace(/\\cup/g, '∪');
+        text = text.replace(/\\subset/g, '⊂');
+        text = text.replace(/\\supset/g, '⊃');
+        text = text.replace(/\\subseteq/g, '⊆');
+        text = text.replace(/\\supseteq/g, '⊇');
+        text = text.replace(/\\in/g, '∈');
+        text = text.replace(/\\notin/g, '∉');
+        text = text.replace(/\\sqrt/g, '√');
+        text = text.replace(/\\sum/g, '∑');
+        text = text.replace(/\\int/g, '∫');
+        text = text.replace(/\\prod/g, '∏');
+        
         text = text.replace(/\$\$([\s\S]*?)\$\$/g, '$1');
         text = text.replace(/\$([^\$]+?)\$/g, '$1');
         text = text.replace(/\$/g, '');
@@ -857,14 +893,44 @@
         await renderOfflineQuestion();
     })();
     
-    // ================= AI 模式逻辑（修改：变式方式只随机选择一种） =================
+    // ================= AI 模式逻辑（修复：提取年级和标签信息） =================
     let aiQuestions=[], aiUserAnswers=[], aiCurrentIdx=0, aiStartTimestamp=null, aiTimerInt=null, aiActive=false, aiSelectedClass="", aiStudentName="";
     let aiUtterance = null;
     const VARIANT_MODES=["情境转换","数据修改","跨学科","提升难度","降低难度","综合变化"];
-    // 修改：只随机选择一种变化方式，不再随机抽取1~2种
+    // 只随机选择一种变化方式
     function getRandomModes() { 
         const randomIndex = Math.floor(Math.random() * VARIANT_MODES.length);
         return [VARIANT_MODES[randomIndex]];
+    }
+    
+    // 从原题中提取年级（优先使用 gradeVersion，否则从 tags 中匹配）
+    function extractGradeLevel(original) {
+        if (original.gradeVersion && original.gradeVersion.trim()) {
+            let gv = original.gradeVersion.trim();
+            // 处理类似 "三年级上册" → "三年级"
+            const match = gv.match(/[一二三四五六]年级/);
+            if (match) return match[0];
+            return gv;
+        }
+        // 从 tags 中查找年级标签
+        if (original.tags && Array.isArray(original.tags)) {
+            for (let tag of original.tags) {
+                const match = tag.match(/[一二三四五六]年级/);
+                if (match) return match[0];
+            }
+        }
+        return null; // 无法获取年级时返回 null，AI 将使用通用描述
+    }
+    
+    // 获取原题标签描述（非年级、非单元的其他自定义标签）
+    function getTagDescription(original) {
+        if (!original.tags || !Array.isArray(original.tags)) return '';
+        const tags = original.tags.filter(t => {
+            // 排除年级和单元标签（单元通常由教师端传入）
+            return !t.match(/[一二三四五六]年级/) && !t.match(/第[一二三四五六七八九十]+单元/);
+        });
+        if (tags.length === 0) return '';
+        return `原题标签：${tags.join('、')}。`;
     }
     
     async function fetchMistakes(){ 
@@ -873,7 +939,14 @@
         return d.submissions.map((s,idx)=>{
             let originalId = s.originalId;
             if (!originalId) originalId = generateOriginalId(s.text, s.gradeVersion, s.unit);
-            return { id: s._ip || `q_${idx}`, text: s.text || "错题", gradeVersion: s.gradeVersion || '', unit: s.unit || '', originalId: originalId };
+            return { 
+                id: s._ip || `q_${idx}`, 
+                text: s.text || "错题", 
+                gradeVersion: s.gradeVersion || '', 
+                unit: s.unit || '', 
+                tags: s.tags ? (Array.isArray(s.tags)?s.tags:s.tags.split(",")) : [],
+                originalId: originalId 
+            };
         }); 
     }
     
@@ -881,7 +954,21 @@
         if(!DOUBAO_API_KEY) throw new Error("无API Key"); 
         const modes=getRandomModes(); 
         const modesText = modes.join("、");
-        const prompt=`你是一位优秀的小学数学教师。请根据以下原题生成一道选择题变式题。变化方式：${modesText}。要求：1.知识点相同；2.独立完整；3.只输出题目本身，不要输出任何多余的解释、评语或版本标题（如“降低难度版”）；4.提供A、B、C三个选项，每个选项单独一行，末尾用【答案】X标注正确答案；5.可使用LaTeX。注意：【答案】X只用于标识正确选项，不要出现在题目正文中。原题：${original.text}`; 
+        
+        // 提取年级信息
+        let gradeLevel = extractGradeLevel(original);
+        let gradeConstraint = "";
+        if (gradeLevel) {
+            gradeConstraint = `题目难度和内容要符合${gradeLevel}学生的认知水平。`;
+        } else {
+            gradeConstraint = `题目难度和内容要符合小学阶段学生的认知水平，难度适中。`;
+        }
+        
+        // 提取标签描述（可选，帮助AI理解题目特点）
+        const tagDesc = getTagDescription(original);
+        
+        const prompt=`你是一位优秀的小学数学教师。请根据以下原题生成一道选择题变式题。变化方式：${modesText}。要求：1.知识点相同；2.独立完整；3.只输出题目本身，不要输出任何多余的解释、评语或版本标题（如“降低难度版”）；4.提供A、B、C三个选项，每个选项单独一行，末尾用【答案】X标注正确答案；5.可使用LaTeX。注意：【答案】X只用于标识正确选项，不要出现在题目正文中。${gradeConstraint}${tagDesc ? ' '+tagDesc : ''}原题：${original.text}`; 
+        
         const res=await fetch(DOUBAO_CHAT_ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${DOUBAO_API_KEY}`},body:JSON.stringify({model:DOUBAO_CHAT_MODEL,messages:[{role:"user",content:prompt}],max_tokens:2000,temperature:0.8})}); 
         if(!res.ok) throw new Error("AI失败"); 
         const data=await res.json(); 
