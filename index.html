@@ -61,7 +61,6 @@
         .loading-text { background: white; padding: 8px 20px; border-radius: 60px; font-weight: 500; }
         footer { text-align: center; font-size: 0.65rem; color: #7895b2; margin-top: 20px; }
         .speaker-btn { background: #eef3fc; border: none; border-radius: 50%; width: 40px; height: 40px; font-size: 1.2rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; color: #1e6f9f; }
-        /* 排行榜样式 - 一行一个学生，清晰易读 */
         .rank-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; background: white; border-radius: 28px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         .rank-table th, .rank-table td { padding: 12px 8px; text-align: center; border-bottom: 1px solid #eef2f8; }
         .rank-table th { background: #eef3fc; color: #2c6e9e; font-weight: 600; font-size: 0.7rem; }
@@ -169,7 +168,7 @@
     const DAILY_LIMIT = 3;
     const PRESET_API_KEY = "ark-ff1505b4-a605-4fc0-9dca-3e9c0c1d690c-dbc4e";
     const PRESET_ENDPOINT = "https://ark.cn-beijing.volces.com/api/v3/chat/completions";
-    const PRESET_MODEL = "doubao-seed-2-0-lite-260428";
+    const PRESET_MODEL = "doubao-seed-2-0-mini-260428";
     if (!localStorage.getItem("doubao_api_key")) localStorage.setItem("doubao_api_key", PRESET_API_KEY);
     if (!localStorage.getItem("doubao_endpoint")) localStorage.setItem("doubao_endpoint", PRESET_ENDPOINT);
     if (!localStorage.getItem("doubao_model")) localStorage.setItem("doubao_model", PRESET_MODEL);
@@ -250,7 +249,7 @@
     document.getElementById("offlineUnitSelect")?.addEventListener("change",async()=>{ if(!offlineActive) return; await offlineRestart(); });
     (async()=>{ await loadOfflineBank(); await offlineRestart(); })();
 
-    // ================= AI 模式 =================
+    // ================= AI 模式（并行生成变式） =================
     let aiQuestions=[], aiAnswers=[], aiCurr=0, aiActive=false, aiTimer=null, aiStartTime=null, aiSelectedClass="", aiStudentName="", aiUtter=null;
     let allMistakes=[];
     const VARIANT_MODES=["情境转换","数据修改","跨学科","提升难度","降低难度","综合变化"];
@@ -258,7 +257,10 @@
     async function fetchMistakes(){ let r=await fetch(AI_API_BASE+"/all"); let d=await r.json(); allMistakes=(d.submissions||[]).map(s=>({id:s._ip, text:s.text||"", gradeVersion:s.gradeVersion||"", unit:s.unit||"", originalId:s.originalId||generateOriginalId(s.text,s.gradeVersion,s.unit), need_illustration:s.need_illustration===true||s.need_illustration==="true"})); let units=new Set(); allMistakes.forEach(m=>{if(m.unit) units.add(m.unit);}); let sel=document.getElementById("unitSelect"); sel.innerHTML='<option value="__ALL__">全部单元</option>'; [...units].sort().forEach(u=>{let opt=document.createElement("option"); opt.value=u; opt.textContent=u; sel.appendChild(opt);}); }
     async function callIllustration(question,grade){ if(!DOUBAO_API_KEY) return null; try{ let prompt=`为小学数学题生成线稿配图，包含题目主要对象和“？”位置，黑白线条，简洁。题目：${question} 年级：${grade}`; let res=await fetch("https://ark.cn-beijing.volces.com/api/v3/images/generations",{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${DOUBAO_API_KEY}`},body:JSON.stringify({model:DOUBAO_IMG_MODEL,prompt,response_format:"url",size:"2K",watermark:false})}); if(!res.ok) return null; let data=await res.json(); return data.data?.[0]?.url||null; }catch(e){ return null; } }
     async function generateVariant(orig){ if(!DOUBAO_API_KEY) throw new Error("无API Key"); let modes=getRandomMode(); let gradeNum=1,gradeText="一年级"; if(orig.gradeVersion){ let m=orig.gradeVersion.match(/([一二三四五六])年级/); if(m){ let map={一:"1",二:"2",三:"3",四:"4",五:"5",六:"6"}; gradeNum=parseInt(map[m[1]]||"1"); gradeText=`${map[m[1]]}年级`==="1年级"?"一年级":`${map[m[1]]}年级`; } } let complexity=""; if(gradeNum<=1) complexity="每道变式题总字数（不含选项）严格控制在80字以内，使用最简单的生活化语言，情境贴近一年级儿童。"; else if(gradeNum===2) complexity="每道变式题总字数（不含选项）控制在120字以内，情境简单具体。"; else if(gradeNum<=4) complexity="每道变式题总字数（不含选项）控制在200字以内，情境适当丰富。"; else complexity="每道变式题总字数（不含选项）不超过300字，情境可略复杂。"; let prompt=`你是一位优秀的小学数学教师。请根据以下原题生成一道选择题变式题。变化方式：${modes[0]}。年级要求：${gradeText}学生。${complexity}要求：1.知识点相同；2.独立完整；3.只输出题目本身，不要输出任何多余解释；4.提供A、B、C三个选项，每个选项单独一行，末尾用【答案】X标注正确答案；5.可使用LaTeX。注意：【答案】X只用于标识正确选项。原题：${orig.text}`; let res=await fetch(DOUBAO_ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${DOUBAO_API_KEY}`},body:JSON.stringify({model:DOUBAO_MODEL,messages:[{role:"user",content:prompt}],max_tokens:2000,temperature:0.8})}); if(!res.ok) throw new Error("AI失败"); let data=await res.json(); let raw=data.choices[0].message.content; raw=raw.replace(/降低难度版|提升难度版/g,''); let correct=raw.match(/[【\[]答案[】\]]\s*([A-C])/i)?.[1]||"A"; let cleaned=cleanQuestion(raw); if(!cleaned) cleaned=raw.replace(/[【\[]答案[】\]]\s*[A-C]/gi,'').trim(); cleaned=cleanMath(cleaned); let illustration=null; if(orig.need_illustration) try{ illustration=await callIllustration(cleaned,gradeText); }catch(e){} return {id:`v_${Date.now()}_${Math.random()}`, text:cleaned, correctAnswer:correct, originalId:orig.originalId, illustration, needIllustration:orig.need_illustration}; }
-    async function buildAiQuestions(unit){ let pool=unit==="__ALL__"?allMistakes:allMistakes.filter(m=>m.unit===unit); if(!pool.length) throw new Error(`单元“${unit}”下没有错题`); let shuffled=[...pool]; for(let i=shuffled.length-1;i>0;i--){ let j=Math.floor(Math.random()*(i+1)); [shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]]; } let selected=shuffled.slice(0,5); while(selected.length<5) selected.push(...shuffled.slice(0,5-selected.length)); let tasks=selected.map(orig=>generateVariant(orig)); let vars=await Promise.all(tasks); for(let i=vars.length-1;i>0;i--){ let j=Math.floor(Math.random()*(i+1)); [vars[i],vars[j]]=[vars[j],vars[i]]; } return vars; }
+    async function buildAiQuestions(unit){ let pool=unit==="__ALL__"?allMistakes:allMistakes.filter(m=>m.unit===unit); if(!pool.length) throw new Error(`单元“${unit}”下没有错题`); let shuffled=[...pool]; for(let i=shuffled.length-1;i>0;i--){ let j=Math.floor(Math.random()*(i+1)); [shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]]; } let selected=shuffled.slice(0,5); while(selected.length<5) selected.push(...shuffled.slice(0,5-selected.length)); // 并行生成所有变式题
+        let tasks=selected.map(orig=>generateVariant(orig));
+        let vars=await Promise.all(tasks);
+        for(let i=vars.length-1;i>0;i--){ let j=Math.floor(Math.random()*(i+1)); [vars[i],vars[j]]=[vars[j],vars[i]]; } return vars; }
     function startTimer(){ if(aiTimer) clearInterval(aiTimer); aiStartTime=Date.now(); aiTimer=setInterval(()=>{ if(!aiActive) return; let s=Math.floor((Date.now()-aiStartTime)/1000); document.getElementById("aiTimerDisplay").innerText=`${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`; },1000); }
     function stopTimer(){ if(aiTimer){ clearInterval(aiTimer); aiTimer=null; } }
     async function uploadScore(c,n,answers,score,total,time){ try{ await fetch("https://quickform.cn/api/bj2awrwmfp",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({class:c,name:n,answers,score,total,time})}); }catch(e){} }
