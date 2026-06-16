@@ -71,8 +71,6 @@
         .empty-rank { text-align: center; padding: 20px; color: #7895b2; font-size: 0.8rem; background: #f9fafc; border-radius: 28px; }
         .question-illustration { margin: 12px 0; text-align: center; background: #f9fafc; border-radius: 20px; padding: 8px; border: 1px solid #eef2f8; }
         .question-illustration img { max-width: 100%; max-height: 200px; border-radius: 12px; cursor: pointer; }
-        .ai-illustration-btn { background: #eef3fc; border: 1px solid #bdd8f0; border-radius: 40px; padding: 6px 12px; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; color: #1e6f9f; margin-bottom: 8px; }
-        .warning-box { background: #fff3e0; border-left: 4px solid #e6a017; padding: 12px; border-radius: 20px; margin: 12px 0; font-size: 0.8rem; color: #a46400; }
         .offline-image-container { background: #f9fafc; border-radius: 20px; display: flex; justify-content: center; margin-top: 12px; cursor: pointer; }
         .offline-mistake-img { max-width: 100%; max-height: 180px; object-fit: contain; border-radius: 16px; }
         .leaderboard-footer { font-size: 0.65rem; text-align: center; margin-top: 12px; color: #7895b2; }
@@ -133,7 +131,7 @@
         <div id="aiQuizPanel" class="card" style="display: none;">
             <div class="flex-between"><div class="timer-area">⏱️ <span id="aiTimerDisplay">00:00</span></div><button class="speaker-btn" id="aiSpeakBtn">🔊</button></div>
             <div class="question-box"><div class="question-text math" id="aiQuestionText">加载中...</div></div>
-            <div><button class="ai-illustration-btn" id="aiShowIllustrationBtn" style="display: none;">🖼️ 显示配图</button></div>
+            <!-- 已移除“显示配图”按钮 -->
             <div id="aiIllustrationArea" class="question-illustration" style="display: none;"></div>
             <div id="aiAnswerArea"></div>
             <div class="nav-buttons"><button class="nav-btn" id="aiPrevBtn">◀ 上一题</button><button class="nav-btn" id="aiNextBtn">下一题 ▶</button></div>
@@ -249,7 +247,7 @@
     document.getElementById("offlineUnitSelect")?.addEventListener("change",async()=>{ if(!offlineActive) return; await offlineRestart(); });
     (async()=>{ await loadOfflineBank(); await offlineRestart(); })();
 
-    // ================= AI 模式（并行生成变式） =================
+    // ================= AI 模式（并行生成变式，配图自动显示） =================
     let aiQuestions=[], aiAnswers=[], aiCurr=0, aiActive=false, aiTimer=null, aiStartTime=null, aiSelectedClass="", aiStudentName="", aiUtter=null;
     let allMistakes=[];
     const VARIANT_MODES=["情境转换","数据修改","跨学科","提升难度","降低难度","综合变化"];
@@ -268,18 +266,24 @@
     function stopAiSpeak(){ if(window.speechSynthesis) window.speechSynthesis.cancel(); aiUtter=null; let btn=document.getElementById("aiSpeakBtn"); if(btn) btn.textContent="🔊"; }
     function speakAiText(t){ if(!window.speechSynthesis) return; if(aiUtter){ if(!window.speechSynthesis.paused){ window.speechSynthesis.pause(); let btn=document.getElementById("aiSpeakBtn"); if(btn) btn.textContent="▶️"; }else{ window.speechSynthesis.resume(); let btn=document.getElementById("aiSpeakBtn"); if(btn) btn.textContent="⏸️"; } return; } stopAiSpeak(); let u=new SpeechSynthesisUtterance(t); u.lang="zh-CN"; u.onend=()=>{ aiUtter=null; let btn=document.getElementById("aiSpeakBtn"); if(btn) btn.textContent="🔊"; }; u.onerror=()=>{ aiUtter=null; let btn=document.getElementById("aiSpeakBtn"); if(btn) btn.textContent="🔊"; }; u.onstart=()=>{ let btn=document.getElementById("aiSpeakBtn"); if(btn) btn.textContent="⏸️"; }; aiUtter=u; window.speechSynthesis.speak(u); }
     function getAiStem(q){ let s=q.text.replace(/[A-C][\.\、][^A-C]*/gi,'').trim(); return cleanQuestion(s)||cleanQuestion(q.text); }
-    function hideIllustrationArea() { let area=document.getElementById("aiIllustrationArea"); if(area){ area.style.display="none"; area.innerHTML=""; } }
+    function displayAiIllustration(q) {
+        const area = document.getElementById("aiIllustrationArea");
+        if (!area) return;
+        if (q.illustration) {
+            area.style.display = "block";
+            area.innerHTML = `<img src="${q.illustration}" onclick="window.open('${q.illustration}')" style="max-width:100%; max-height:200px; border-radius:12px; cursor:pointer;"><div style="margin-top:6px; display:flex; gap:8px; justify-content:center;"><button onclick="copyImage('${q.illustration}')" style="background:#eef3fc; border:1px solid #cde0ef; border-radius:40px; padding:4px 12px; font-size:0.7rem; color:#1e6f9f; cursor:pointer;">📋复制</button><button onclick="downloadImage('${q.illustration}')" style="background:#eef3fc; border:1px solid #cde0ef; border-radius:40px; padding:4px 12px; font-size:0.7rem; color:#1e6f9f; cursor:pointer;">💾下载</button></div>`;
+        } else {
+            area.style.display = "none";
+            area.innerHTML = "";
+        }
+    }
     async function renderAiQ(){ 
         let q=aiQuestions[aiCurr]; 
         let stem=getAiStem(q); 
         document.getElementById("aiQuestionText").innerHTML=stem; 
         await MathJax.typesetPromise([document.getElementById("aiQuestionText")]); 
-        const illustrationBtn = document.getElementById("aiShowIllustrationBtn");
-        if (illustrationBtn) {
-            if (q.needIllustration === true) illustrationBtn.style.display = "inline-flex";
-            else illustrationBtn.style.display = "none";
-        }
-        hideIllustrationArea();
+        // 直接显示配图（如果有）
+        displayAiIllustration(q);
         let opts=parseOptions(q.text); 
         let area=document.getElementById("aiAnswerArea"); 
         area.innerHTML=""; 
@@ -294,37 +298,6 @@
         document.getElementById("aiPrevBtn").disabled=aiCurr===0; 
         document.getElementById("aiNextBtn").disabled=aiCurr===aiQuestions.length-1; 
     }
-    async function showOrGenerateIllustration(){ 
-        if(!aiActive||!aiQuestions.length) return; 
-        let q=aiQuestions[aiCurr]; 
-        let area=document.getElementById("aiIllustrationArea"); 
-        if(q.illustration){ 
-            area.style.display="block"; 
-            area.innerHTML=`<img src="${q.illustration}" onclick="window.open('${q.illustration}')"><div style="margin-top:6px;"><button onclick="copyImage('${q.illustration}')">📋复制</button> <button onclick="downloadImage('${q.illustration}')">💾下载</button></div>`; 
-            return; 
-        } 
-        if(!q.needIllustration){ 
-            area.style.display="block"; 
-            area.innerHTML='<div class="illustration-placeholder">ℹ️ 本题未开启自动配图</div>'; 
-            setTimeout(()=>hideIllustrationArea(),2000); 
-            return; 
-        } 
-        area.style.display="block"; 
-        area.innerHTML='<div class="loading-img" style="width:40px;height:40px;border:2px solid #e0eefc;border-top-color:#1e6f9f;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto;"></div><div class="illustration-placeholder">🎨 正在生成配图...</div>'; 
-        try{ 
-            let ill=await callIllustration(q.text,"一年级"); 
-            if(ill){ 
-                q.illustration=ill; 
-                area.innerHTML=`<img src="${ill}" onclick="window.open('${ill}')"><div style="margin-top:6px;"><button onclick="copyImage('${ill}')">📋复制</button> <button onclick="downloadImage('${ill}')">💾下载</button></div>`; 
-            }else{ 
-                area.innerHTML='<div class="illustration-placeholder">❌ 配图生成失败</div>'; 
-                setTimeout(()=>hideIllustrationArea(),3000); 
-            } 
-        }catch(e){ 
-            area.innerHTML='<div class="illustration-placeholder">❌ 配图生成出错</div>'; 
-            setTimeout(()=>hideIllustrationArea(),3000); 
-        } 
-    }
     window.copyImage=function(url){ fetch(url).then(r=>r.blob()).then(blob=>{ navigator.clipboard.write([new ClipboardItem({[blob.type]:blob})]).then(()=>alert("已复制")); }).catch(()=>alert("失败")); };
     window.downloadImage=function(url,filename="math.png"){ let a=document.createElement('a'); a.href=url; a.download=filename; document.body.appendChild(a); a.click(); document.body.removeChild(a); };
     async function finishAi(){ stopTimer(); aiActive=false; stopAiSpeak(); let elapsed=Math.floor((Date.now()-aiStartTime)/1000); let timeStr=`${Math.floor(elapsed/60).toString().padStart(2,'0')}:${(elapsed%60).toString().padStart(2,'0')}`; let correct=0, html=[], origResults=[]; for(let i=0;i<aiQuestions.length;i++){ let q=aiQuestions[i], user=aiAnswers[i]||"（未作答）", std=q.correctAnswer, isCorrect=user===std; if(isCorrect) correct++; if(q.originalId) origResults.push({originalId:q.originalId,isCorrect}); let full=cleanQuestion(q.text); html.push(`<div class="answer-detail"><div class="flex-between"><strong>第 ${i+1} 题</strong> <span class="${isCorrect?'correct':'wrong'}">${isCorrect?'✓ 正确':'✗ 错误'}</span></div><div class="question-full math">${escapeHtml(full)}</div><div class="option-row">📝 你的答案：${escapeHtml(user)}</div><div class="option-row">📖 参考答案：${escapeHtml(std)}</div></div>`); } document.getElementById("aiResultSummary").innerHTML=`<div class="result-item"><div class="result-number">${correct}</div><div>正确</div></div><div class="result-item"><div class="result-number">${aiQuestions.length-correct}</div><div>错误</div></div><div class="result-item"><div class="result-number">${timeStr}</div><div>用时</div></div>`; document.getElementById("aiAnswerDetails").innerHTML=html.join(''); await MathJax.typesetPromise(); document.getElementById("aiStartPanel").style.display="none"; document.getElementById("aiQuizPanel").style.display="none"; document.getElementById("aiResultPanel").style.display="block"; await uploadScore(aiSelectedClass,aiStudentName,aiAnswers,correct,aiQuestions.length,timeStr); let key=`${aiSelectedClass}|${aiStudentName}`; let attempts=JSON.parse(localStorage.getItem("quiz_attempts")||'{}'); let today=new Date().toISOString().slice(0,10); if(attempts[key]?.date===today) attempts[key].count=(attempts[key].count||0)+1; else attempts[key]={date:today,count:1}; localStorage.setItem("quiz_attempts",JSON.stringify(attempts)); await refreshLeaderboard(); if(origResults.length) await reportFeedback(aiSelectedClass,aiStudentName,origResults); }
@@ -336,7 +309,6 @@
     document.getElementById("aiRestartBtn")?.addEventListener("click",()=>{ stopTimer(); stopAiSpeak(); document.getElementById("aiStartPanel").style.display="block"; document.getElementById("aiQuizPanel").style.display="none"; document.getElementById("aiResultPanel").style.display="none"; aiActive=false; });
     document.getElementById("aiShareBackBtn")?.addEventListener("click",()=>{ stopTimer(); stopAiSpeak(); document.getElementById("aiStartPanel").style.display="block"; document.getElementById("aiQuizPanel").style.display="none"; document.getElementById("aiResultPanel").style.display="none"; });
     document.getElementById("aiSpeakBtn")?.addEventListener("click",()=>{ if(aiActive&&aiQuestions[aiCurr]) speakAiText(getAiStem(aiQuestions[aiCurr])); });
-    document.getElementById("aiShowIllustrationBtn")?.addEventListener("click",showOrGenerateIllustration);
     document.getElementById("aiRefreshLeaderboardBtn")?.addEventListener("click",refreshLeaderboard);
 
     // ================= 选项卡切换 =================
