@@ -61,9 +61,28 @@
         .loading-text { background: white; padding: 8px 20px; border-radius: 60px; font-weight: 500; }
         footer { text-align: center; font-size: 0.65rem; color: #7895b2; margin-top: 20px; }
         .speaker-btn { background: #eef3fc; border: none; border-radius: 50%; width: 40px; height: 40px; font-size: 1.2rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; color: #1e6f9f; }
-        .rank-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; background: white; border-radius: 28px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        /* 排行榜样式 - 滚动列表 */
+        .rank-scroll-container {
+            max-height: 280px;
+            overflow-y: auto;
+            border-radius: 28px;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .rank-scroll-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        .rank-scroll-container::-webkit-scrollbar-track {
+            background: #f0f4fa;
+            border-radius: 10px;
+        }
+        .rank-scroll-container::-webkit-scrollbar-thumb {
+            background: #cde0ef;
+            border-radius: 10px;
+        }
+        .rank-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
         .rank-table th, .rank-table td { padding: 12px 8px; text-align: center; border-bottom: 1px solid #eef2f8; }
-        .rank-table th { background: #eef3fc; color: #2c6e9e; font-weight: 600; font-size: 0.7rem; }
+        .rank-table th { background: #eef3fc; color: #2c6e9e; font-weight: 600; font-size: 0.7rem; position: sticky; top: 0; z-index: 2; }
         .rank-table td { background: white; }
         .rank-table tr:last-child td { border-bottom: none; }
         .leaderboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
@@ -73,7 +92,12 @@
         .question-illustration img { max-width: 100%; max-height: 200px; border-radius: 12px; cursor: pointer; }
         .offline-image-container { background: #f9fafc; border-radius: 20px; display: flex; justify-content: center; margin-top: 12px; cursor: pointer; }
         .offline-mistake-img { max-width: 100%; max-height: 180px; object-fit: contain; border-radius: 16px; }
-        .leaderboard-footer { font-size: 0.65rem; text-align: center; margin-top: 12px; color: #7895b2; }
+        .leaderboard-footer { font-size: 0.65rem; text-align: center; margin-top: 8px; color: #7895b2; }
+        .rank-medal { font-weight: 500; font-size: 1rem; }
+        .rank-class { font-size: 0.75rem; }
+        .rank-name { font-size: 0.75rem; font-weight: 500; }
+        .rank-score { font-size: 0.75rem; font-weight: 500; }
+        .rank-time { font-size: 0.75rem; }
     </style>
 </head>
 <body>
@@ -131,7 +155,6 @@
         <div id="aiQuizPanel" class="card" style="display: none;">
             <div class="flex-between"><div class="timer-area">⏱️ <span id="aiTimerDisplay">00:00</span></div><button class="speaker-btn" id="aiSpeakBtn">🔊</button></div>
             <div class="question-box"><div class="question-text math" id="aiQuestionText">加载中...</div></div>
-            <!-- 已移除“显示配图”按钮 -->
             <div id="aiIllustrationArea" class="question-illustration" style="display: none;"></div>
             <div id="aiAnswerArea"></div>
             <div class="nav-buttons"><button class="nav-btn" id="aiPrevBtn">◀ 上一题</button><button class="nav-btn" id="aiNextBtn">下一题 ▶</button></div>
@@ -145,9 +168,9 @@
             <button class="btn" id="aiShareBackBtn" style="margin-top:8px;">🏠 返回首页</button>
         </div>
         <div id="aiLeaderboardCard" class="card">
-            <div class="leaderboard-header"><span>🏆 荣耀排行榜（个人最佳）</span><button class="refresh-btn" id="aiRefreshLeaderboardBtn">🔄 刷新</button></div>
+            <div class="leaderboard-header"><span>🏆 今日满分学员</span><button class="refresh-btn" id="aiRefreshLeaderboardBtn">🔄 刷新</button></div>
             <div id="aiLeaderboardContent"><div class="empty-rank">加载中...</div></div>
-            <div class="leaderboard-footer">仅显示前10名，每人仅保留最高分记录</div>
+            <div class="leaderboard-footer">仅显示今日满分记录（每人仅保留最新一次）</div>
         </div>
     </div>
     <footer>⚡ 专注练习 · 即时反馈 · 手动朗读</footer>
@@ -184,34 +207,68 @@
     function cleanQuestion(t){ if(!t) return ''; let s=t; s=s.replace(/[【\[]答案[】\]]\s*[A-C]/gi,'').replace(/正确答案[：:]\s*[A-C]/gi,'').replace(/答案[：:]\s*[A-C]/gi,''); s=s.replace(/降低难度版|提升难度版/g,''); let lines=s.split(/\r?\n/), out=[], found=false; for(let l of lines){ l=l.trim(); if(!l) continue; if(found && (l.match(/^\d+\./)||l.match(/^\(\d+\)/))) break; out.push(l); if(!found && (l.match(/^\d+\./)||l.match(/^\(\d+\)/)||l.length>10)) found=true; } s=out.join('\n').trim(); return cleanMath(s)||cleanMath(t); }
     function parseOptions(txt){ let opts=[]; let match; let re=/([A-C])[\.\、]\s*([^A-C]*?)(?=[A-C][\.\、]|$)/gi; while((match=re.exec(txt))!==null){ let raw=match[2].trim().replace(/\s+/g,' '); if(raw.length>80) raw=raw.slice(0,80)+'…'; opts.push({letter:match[1],text:raw||`选项${match[1]}`}); } if(opts.length<3){ let lines=txt.split(/\r?\n/); for(let l of lines){ let m=l.match(/^([A-C])[\.\、]\s*(.+)/); if(m) opts.push({letter:m[1],text:m[2].trim().slice(0,80)}); } } while(opts.length<3) opts.push({letter:String.fromCharCode(65+opts.length),text:`默认选项${String.fromCharCode(65+opts.length)}`}); return opts.slice(0,3); }
 
-    // ================= 排行榜 =================
+    // ================= 排行榜（今日满分，去重，每人仅显示最新一次） =================
     async function fetchLeaderboard(){ try{ let r=await fetch(LEADERBOARD_API); if(!r.ok) throw new Error(); let d=await r.json(); return d.submissions||[]; }catch(e){ return []; } }
-    function getPersonalBest(subs){ let map=new Map(); for(let s of subs){ let c=s.class||'', n=s.name||''; if(!c||!n) continue; let key=`${c}|${n}`; let score=s.score||0, total=s.total||5, time=s.time||"00:00", sec=time.includes(':')?parseInt(time.split(':')[0])*60+parseInt(time.split(':')[1]):99999, at=new Date(s.submitted_at).getTime()||0; if(!map.has(key)) map.set(key,{class:c,name:n,score,total,time,seconds:sec,submittedAt:at}); else{ let ex=map.get(key); if(score>ex.score) map.set(key,{class:c,name:n,score,total,time,seconds:sec,submittedAt:at}); else if(score===ex.score && (sec<ex.seconds || (sec===ex.seconds && at<ex.submittedAt))) map.set(key,{class:c,name:n,score,total,time,seconds:sec,submittedAt:at}); } } let arr=Array.from(map.values()); arr.sort((a,b)=>b.score!==a.score?b.score-a.score:a.seconds-b.seconds); return arr; }
-    function renderLeaderboard(subs,containerId){ 
-        let c=document.getElementById(containerId); 
-        if(!c) return; 
-        let best=getPersonalBest(subs); 
-        if(!best.length){ 
-            c.innerHTML='<div class="empty-rank">暂无闯关记录，快来成为第一个吧！</div>'; 
-            return; 
-        } 
-        let perfect=best.filter(i=>i.score===5).length; 
-        let top=best.slice(0,10); 
-        let html=`<table class="rank-table"><thead><tr><th>🏅</th><th>班级</th><th>姓名</th><th>得分</th><th>用时</th></tr></thead><tbody>`; 
-        top.forEach((i,idx)=>{ 
-            let medal=idx===0?"🏅":idx===1?"🥈":idx===2?"🥉":(idx+1); 
-            html+=`<tr>
-                <td style="font-weight:500; font-size:1rem;">${medal}</td>
-                <td style="font-size:0.75rem;">${escapeHtml(i.class)}</td>
-                <td style="font-size:0.75rem; font-weight:500;">${escapeHtml(i.name)}</td>
-                <td style="font-size:0.75rem; font-weight:500;">${i.score}/${i.total}</td>
-                <td style="font-size:0.75rem;">${i.time}</td>
-            </tr>`; 
-        }); 
-        html+=`</tbody></table><div class="leaderboard-footer">🎉 全对人数: ${perfect}</div>`; 
-        c.innerHTML=html; 
+    
+    function getTodayFullScoreList(subs) {
+        const today = new Date();
+        const todayStr = today.toISOString().slice(0, 10); // YYYY-MM-DD
+        // 过滤：当天提交 && 满分（score === total，总分为5）
+        const fullScoreList = subs.filter(s => {
+            if (!s.submitted_at) return false;
+            const subDate = new Date(s.submitted_at);
+            const subStr = subDate.toISOString().slice(0, 10);
+            if (subStr !== todayStr) return false;
+            const score = s.score || 0;
+            const total = s.total || 5;
+            return score === total;
+        });
+        // 按提交时间倒序（最新优先）
+        fullScoreList.sort((a, b) => new Date(b.submitted_at) - new Date(a.submitted_at));
+        
+        // 按班级+姓名去重，保留最新的一条
+        const seen = new Map();
+        const uniqueList = [];
+        for (const item of fullScoreList) {
+            const key = `${item.class || ''}|${item.name || ''}`;
+            if (!seen.has(key)) {
+                seen.set(key, true);
+                uniqueList.push(item);
+            }
+        }
+        return uniqueList;
     }
-    async function refreshLeaderboard(){ let subs=await fetchLeaderboard(); renderLeaderboard(subs,"aiLeaderboardContent"); }
+
+    function renderLeaderboard(subs, containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        const todayFull = getTodayFullScoreList(subs);
+        if (todayFull.length === 0) {
+            container.innerHTML = '<div class="empty-rank">🎉 今日暂无满分学员，再接再厉！</div>';
+            return;
+        }
+        // 构建表格，带滚动容器
+        let html = `<div class="rank-scroll-container"><table class="rank-table"><thead><tr><th>🏅</th><th>班级</th><th>姓名</th><th>得分</th><th>用时</th></tr></thead><tbody>`;
+        todayFull.forEach((item, idx) => {
+            const medal = idx === 0 ? "🏅" : (idx === 1 ? "🥈" : (idx === 2 ? "🥉" : `${idx+1}`));
+            html += `<tr>
+                <td class="rank-medal">${medal}</td>
+                <td class="rank-class">${escapeHtml(item.class || '')}</td>
+                <td class="rank-name">${escapeHtml(item.name || '')}</td>
+                <td class="rank-score">${item.score}/${item.total || 5}</td>
+                <td class="rank-time">${item.time || '--:--'}</td>
+            </tr>`;
+        });
+        html += `</tbody></table></div><div class="leaderboard-footer">🎉 今日满分人数: ${todayFull.length}</div>`;
+        container.innerHTML = html;
+    }
+
+    async function refreshLeaderboard() {
+        const container = document.getElementById("aiLeaderboardContent");
+        if (container) container.innerHTML = '<div class="empty-rank">加载中...</div>';
+        const subs = await fetchLeaderboard();
+        renderLeaderboard(subs, "aiLeaderboardContent");
+    }
 
     // ================= 白名单 =================
     async function fetchWhitelist(){ try{ let r=await fetch(WHITELIST_API_ALL); if(!r.ok) throw new Error(); let d=await r.json(); whitelist=(d.submissions||[]).map(s=>({class:s.class||"",name:s.name||""})).filter(i=>i.class&&i.name); document.getElementById("whitelistStatus").innerHTML=`📋 白名单: ${whitelist.length} 位学生`; }catch(e){ whitelist=[]; } }
@@ -247,7 +304,7 @@
     document.getElementById("offlineUnitSelect")?.addEventListener("change",async()=>{ if(!offlineActive) return; await offlineRestart(); });
     (async()=>{ await loadOfflineBank(); await offlineRestart(); })();
 
-    // ================= AI 模式（并行生成变式，配图自动显示） =================
+    // ================= AI 模式（并行生成变式） =================
     let aiQuestions=[], aiAnswers=[], aiCurr=0, aiActive=false, aiTimer=null, aiStartTime=null, aiSelectedClass="", aiStudentName="", aiUtter=null;
     let allMistakes=[];
     const VARIANT_MODES=["情境转换","数据修改","跨学科","提升难度","降低难度","综合变化"];
@@ -282,7 +339,6 @@
         let stem=getAiStem(q); 
         document.getElementById("aiQuestionText").innerHTML=stem; 
         await MathJax.typesetPromise([document.getElementById("aiQuestionText")]); 
-        // 直接显示配图（如果有）
         displayAiIllustration(q);
         let opts=parseOptions(q.text); 
         let area=document.getElementById("aiAnswerArea"); 
