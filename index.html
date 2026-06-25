@@ -170,7 +170,7 @@
         <div id="aiLeaderboardCard" class="card">
             <div class="leaderboard-header"><span>🏆 今日满分学员</span><button class="refresh-btn" id="aiRefreshLeaderboardBtn">🔄 刷新</button></div>
             <div id="aiLeaderboardContent"><div class="empty-rank">加载中...</div></div>
-            <div class="leaderboard-footer">仅显示今日满分记录（每人仅保留最新一次）</div>
+            <div class="leaderboard-footer">仅显示今日满分记录（每人仅显示成绩最好的一次）</div>
         </div>
     </div>
     <footer>⚡ 专注练习 · 即时反馈 · 手动朗读</footer>
@@ -207,7 +207,7 @@
     function cleanQuestion(t){ if(!t) return ''; let s=t; s=s.replace(/[【\[]答案[】\]]\s*[A-C]/gi,'').replace(/正确答案[：:]\s*[A-C]/gi,'').replace(/答案[：:]\s*[A-C]/gi,''); s=s.replace(/降低难度版|提升难度版/g,''); let lines=s.split(/\r?\n/), out=[], found=false; for(let l of lines){ l=l.trim(); if(!l) continue; if(found && (l.match(/^\d+\./)||l.match(/^\(\d+\)/))) break; out.push(l); if(!found && (l.match(/^\d+\./)||l.match(/^\(\d+\)/)||l.length>10)) found=true; } s=out.join('\n').trim(); return cleanMath(s)||cleanMath(t); }
     function parseOptions(txt){ let opts=[]; let match; let re=/([A-C])[\.\、]\s*([^A-C]*?)(?=[A-C][\.\、]|$)/gi; while((match=re.exec(txt))!==null){ let raw=match[2].trim().replace(/\s+/g,' '); if(raw.length>80) raw=raw.slice(0,80)+'…'; opts.push({letter:match[1],text:raw||`选项${match[1]}`}); } if(opts.length<3){ let lines=txt.split(/\r?\n/); for(let l of lines){ let m=l.match(/^([A-C])[\.\、]\s*(.+)/); if(m) opts.push({letter:m[1],text:m[2].trim().slice(0,80)}); } } while(opts.length<3) opts.push({letter:String.fromCharCode(65+opts.length),text:`默认选项${String.fromCharCode(65+opts.length)}`}); return opts.slice(0,3); }
 
-    // ================= 排行榜（今日满分，去重，每人仅显示最新一次） =================
+    // ================= 排行榜（今日满分，去重，每人仅显示成绩最好的一次） =================
     async function fetchLeaderboard(){ try{ let r=await fetch(LEADERBOARD_API); if(!r.ok) throw new Error(); let d=await r.json(); return d.submissions||[]; }catch(e){ return []; } }
     
     function getTodayFullScoreList(subs) {
@@ -223,10 +223,15 @@
             const total = s.total || 5;
             return score === total;
         });
-        // 按提交时间倒序（最新优先）
-        fullScoreList.sort((a, b) => new Date(b.submitted_at) - new Date(a.submitted_at));
+        // 按分数降序，同分按时间倒序（最新优先）
+        fullScoreList.sort((a, b) => {
+            const scoreA = a.score || 0;
+            const scoreB = b.score || 0;
+            if (scoreA !== scoreB) return scoreB - scoreA;
+            return new Date(b.submitted_at) - new Date(a.submitted_at);
+        });
         
-        // 按班级+姓名去重，保留最新的一条
+        // 按班级+姓名去重，保留第一个（即成绩最高、最新的）
         const seen = new Map();
         const uniqueList = [];
         for (const item of fullScoreList) {
