@@ -198,6 +198,8 @@
         <div id="offlineStartPanel" class="card">
             <div class="title">📝 离线练习模式</div>
             <div class="sub">基于成题库 · 即时反馈 · 点击🔊手动读题</div>
+            <!-- 新增：小字显示题库数量 -->
+            <div id="offlineBankCount" style="text-align:center; font-size:0.7rem; color:#7895b2; margin: -6px 0 12px 0;">📚 题库共 0 道题</div>
             <div class="whitelist-bar">
                 <span class="whitelist-status" id="offlineWhitelistStatus">📋 白名单: 加载中...</span>
                 <div style="display: flex; gap: 6px;">
@@ -288,7 +290,7 @@
     const OFFLINE_API_BASE = "https://wzkjgz.site/api/nh77dub2er";                 // 离线成题（含标准答案、图片）
     const OFFLINE_SCORE_API = "https://wzkjgz.site/api/ic80kof9jq";                // 离线成绩提交
     const OFFLINE_LEADERBOARD_API = "https://wzkjgz.site/api/ic80kof9jq/all";      // 离线排行榜
-    const AI_LEADERBOARD_API = "https://wzkjgz.site/api/bj2awrwmfp/all";           // AI排行榜
+    const AI_LEADERBOARD_API = "https://quickform.cn/api/bj2awrwmfp/all";           // AI排行榜
     const WHITELIST_API_ALL = "https://quickform.cn/api/5tmbx2o6rg/all";
     const WHITELIST_API = "https://quickform.cn/api/5tmbx2o6rg";
     const WHITELIST_CLEAR = "https://quickform.cn/api/5tmbx2o6rg/clear";
@@ -346,12 +348,10 @@
             const total = s.total || 5;
             return score === total;
         });
-        // 排序：先按得分降序（满分相同），再按用时升序（短时优先）
         fullScoreList.sort((a, b) => {
             const scoreA = a.score || 0;
             const scoreB = b.score || 0;
             if (scoreA !== scoreB) return scoreB - scoreA;
-            // 将 "MM:SS" 转为秒数比较
             const timeA = a.time || '00:00';
             const timeB = b.time || '00:00';
             const secondsA = timeA.split(':').reduce((acc, cur) => acc * 60 + parseInt(cur, 10), 0);
@@ -414,7 +414,6 @@
             const total = s.total || 5;
             return score === total;
         });
-        // 排序：先按得分降序（满分相同），再按用时升序（短时优先）
         fullScoreList.sort((a, b) => {
             const scoreA = a.score || 0;
             const scoreB = b.score || 0;
@@ -485,6 +484,9 @@
         let sel=document.getElementById("offlineUnitSelect"); 
         sel.innerHTML='<option value="__ALL__">全部单元</option>'; 
         [...units].sort().forEach(u=>{let opt=document.createElement("option"); opt.value=u; opt.textContent=u; sel.appendChild(opt);}); 
+        // 更新题库数量显示
+        const countEl = document.getElementById("offlineBankCount");
+        if (countEl) countEl.textContent = `📚 题库共 ${offlineBank.length} 道题`;
         return offlineBank; 
     }
 
@@ -896,7 +898,7 @@
     }
     async function uploadScore(c,n,answers,score,total,time){ 
         try{ 
-            await fetch("https://wzkjgz.site/api/bj2awrwmfp",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({class:c,name:n,answers,score,total,time})}); 
+            await fetch("https://quickform.cn/api/bj2awrwmfp",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({class:c,name:n,answers,score,total,time})}); 
         }catch(e){} 
     }
     async function reportFeedback(cls,name,results){ 
