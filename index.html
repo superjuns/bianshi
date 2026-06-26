@@ -179,25 +179,11 @@
         #aiModeArea .speaker-btn {
             background: #f0f4fa !important;
         }
-        /* 修正子元素背景 */
-        #aiModeArea .sub {
-            color: #5a7d9a !important;
-        }
-        #aiModeArea .input-group label {
-            color: #2c6e9e !important;
-        }
-        #aiModeArea select, #aiModeArea input {
-            background: white !important;
-            border-color: #d0dce8 !important;
-        }
-        /* 结果面板 */
-        #aiModeArea .result-stats {
-            background: #f0f4fa !important;
-        }
-        #aiModeArea .answer-detail {
-            background: #f8fafc !important;
-            border-left-color: #1e6f9f !important;
-        }
+        #aiModeArea .sub { color: #5a7d9a !important; }
+        #aiModeArea .input-group label { color: #2c6e9e !important; }
+        #aiModeArea select, #aiModeArea input { background: white !important; border-color: #d0dce8 !important; }
+        #aiModeArea .result-stats { background: #f0f4fa !important; }
+        #aiModeArea .answer-detail { background: #f8fafc !important; border-left-color: #1e6f9f !important; }
     </style>
 </head>
 <body>
@@ -302,13 +288,14 @@
     const OFFLINE_API_BASE = "https://wzkjgz.site/api/nh77dub2er";                 // 离线成题（含标准答案、图片）
     const OFFLINE_SCORE_API = "https://wzkjgz.site/api/ic80kof9jq";                // 离线成绩提交
     const OFFLINE_LEADERBOARD_API = "https://wzkjgz.site/api/ic80kof9jq/all";      // 离线排行榜
-    const AI_LEADERBOARD_API = "https://quickform.cn/api/bj2awrwmfp/all";           // AI排行榜
+    const AI_LEADERBOARD_API = "https://wzkjgz.site/api/bj2awrwmfp/all";           // AI排行榜
     const WHITELIST_API_ALL = "https://quickform.cn/api/5tmbx2o6rg/all";
     const WHITELIST_API = "https://quickform.cn/api/5tmbx2o6rg";
     const WHITELIST_CLEAR = "https://quickform.cn/api/5tmbx2o6rg/clear";
     const FEEDBACK_API = "https://quickform.cn/api/srnos93opr";                     // 学情反馈（教师端正确率统计）
     const WHITELIST_PASSWORD = "ssxx050505";
-    const DAILY_LIMIT = 3;
+    // AI模式每天限制1次，离线模式不限制
+    const AI_DAILY_LIMIT = 1;
     const PRESET_API_KEY = "ark-ff1505b4-a605-4fc0-9dca-3e9c0c1d690c-dbc4e";
     const PRESET_ENDPOINT = "https://ark.cn-beijing.volces.com/api/v3/chat/completions";
     const PRESET_MODEL = "doubao-seed-2-0-mini-260428";
@@ -359,11 +346,17 @@
             const total = s.total || 5;
             return score === total;
         });
+        // 排序：先按得分降序（满分相同），再按用时升序（短时优先）
         fullScoreList.sort((a, b) => {
             const scoreA = a.score || 0;
             const scoreB = b.score || 0;
             if (scoreA !== scoreB) return scoreB - scoreA;
-            return new Date(b.submitted_at) - new Date(a.submitted_at);
+            // 将 "MM:SS" 转为秒数比较
+            const timeA = a.time || '00:00';
+            const timeB = b.time || '00:00';
+            const secondsA = timeA.split(':').reduce((acc, cur) => acc * 60 + parseInt(cur, 10), 0);
+            const secondsB = timeB.split(':').reduce((acc, cur) => acc * 60 + parseInt(cur, 10), 0);
+            return secondsA - secondsB;
         });
         const seen = new Map();
         const uniqueList = [];
@@ -421,11 +414,16 @@
             const total = s.total || 5;
             return score === total;
         });
+        // 排序：先按得分降序（满分相同），再按用时升序（短时优先）
         fullScoreList.sort((a, b) => {
             const scoreA = a.score || 0;
             const scoreB = b.score || 0;
             if (scoreA !== scoreB) return scoreB - scoreA;
-            return new Date(b.submitted_at) - new Date(a.submitted_at);
+            const timeA = a.time || '00:00';
+            const timeB = b.time || '00:00';
+            const secondsA = timeA.split(':').reduce((acc, cur) => acc * 60 + parseInt(cur, 10), 0);
+            const secondsB = timeB.split(':').reduce((acc, cur) => acc * 60 + parseInt(cur, 10), 0);
+            return secondsA - secondsB;
         });
         const seen = new Map();
         const uniqueList = [];
@@ -467,7 +465,7 @@
         renderAILeaderboard(subs, "aiLeaderboardContent");
     }
 
-    // ================= 离线模式逻辑 =================
+    // ================= 离线模式逻辑（不限制次数） =================
     let offlineBank=[], offlineQuestions=[], offlineAnswers=[], offlineCurr=0, offlineActive=false, offlineSelected="", offlineSubmitted=false, offlineUtter=null;
     let offlineStartTime=null, offlineTimer=null, offlineSelectedClass="", offlineStudentName="";
 
@@ -682,7 +680,7 @@
                 }) 
             }); 
         }catch(e){} 
-        // 更新每日练习次数
+        // 更新每日练习次数（仅用于记录，不限制）
         let key=`${offlineSelectedClass}|${offlineStudentName}`; 
         let attempts=JSON.parse(localStorage.getItem("quiz_attempts")||'{}'); 
         let today=new Date().toISOString().slice(0,10); 
@@ -739,14 +737,7 @@
             warn.innerHTML=`⛔ 认证失败：您（${cls}·${name}）不在白名单内`; 
             return; 
         } 
-        let attempts=JSON.parse(localStorage.getItem("quiz_attempts")||'{}'); 
-        let today=new Date().toISOString().slice(0,10); 
-        let key=`${cls}|${name}`; 
-        let count=attempts[key]?.date===today?attempts[key].count:0; 
-        if(count>=DAILY_LIMIT){ 
-            document.getElementById("offlineStartWarning").innerHTML=`⛔ 今日已达上限${DAILY_LIMIT}次`; 
-            return; 
-        } 
+        // 离线模式不限制次数，直接开始
         offlineSelectedClass=cls; 
         offlineStudentName=name; 
         let unit=document.getElementById("offlineUnitSelect").value; 
@@ -795,7 +786,7 @@
 
     document.getElementById("offlineRefreshLeaderboardBtn")?.addEventListener("click",refreshOfflineLeaderboard);
 
-    // ================= AI 模式逻辑（纯白风格，功能不变） =================
+    // ================= AI 模式逻辑（每天限制1次） =================
     let aiQuestions=[], aiAnswers=[], aiCurr=0, aiActive=false, aiTimer=null, aiStartTime=null, aiSelectedClass="", aiStudentName="", aiUtter=null;
     let allMistakes=[];
     const VARIANT_MODES=["情境转换","数据修改","跨学科","提升难度","降低难度","综合变化"];
@@ -905,7 +896,7 @@
     }
     async function uploadScore(c,n,answers,score,total,time){ 
         try{ 
-            await fetch("https://quickform.cn/api/bj2awrwmfp",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({class:c,name:n,answers,score,total,time})}); 
+            await fetch("https://wzkjgz.site/api/bj2awrwmfp",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({class:c,name:n,answers,score,total,time})}); 
         }catch(e){} 
     }
     async function reportFeedback(cls,name,results){ 
@@ -1041,6 +1032,7 @@
         await uploadScore(aiSelectedClass,aiStudentName,aiAnswers,correct,aiQuestions.length,timeStr); 
         if(origResults.length) await reportFeedback(aiSelectedClass,aiStudentName,origResults);
         uploadAiVariantsToOffline(aiQuestions);
+        // 更新每日练习次数（AI模式限制1次）
         let key=`${aiSelectedClass}|${aiStudentName}`; 
         let attempts=JSON.parse(localStorage.getItem("quiz_attempts")||'{}'); 
         let today=new Date().toISOString().slice(0,10); 
@@ -1059,12 +1051,13 @@
             warn.innerHTML=`⛔ 认证失败：您（${cls}·${name}）不在白名单内`; 
             return; 
         } 
+        // AI模式每天限制1次
         let attempts=JSON.parse(localStorage.getItem("quiz_attempts")||'{}'); 
         let today=new Date().toISOString().slice(0,10); 
         let key=`${cls}|${name}`; 
         let count=attempts[key]?.date===today?attempts[key].count:0; 
-        if(count>=DAILY_LIMIT){ 
-            document.getElementById("aiStartWarning").innerHTML=`⛔ 今日已达上限${DAILY_LIMIT}次`; 
+        if(count>=AI_DAILY_LIMIT){ 
+            document.getElementById("aiStartWarning").innerHTML=`⛔ 今日已达上限${AI_DAILY_LIMIT}次`; 
             return; 
         } 
         aiSelectedClass=cls; 
