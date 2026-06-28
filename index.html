@@ -15,8 +15,6 @@
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mammoth@1.4.2/mammoth.browser.min.js"></script>
     <style>
-        /* 样式与原文件完全一致，此处省略以节省篇幅，实际使用时请保留完整样式 */
-        /* ... 原 style 内容 ... */
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { background: linear-gradient(145deg, #e9f0fc 0%, #d9e6f5 100%); font-family: 'Segoe UI', system-ui, sans-serif; padding: 16px; min-height: 100vh; color: #1a2c3e; }
         .game-container { max-width: 550px; margin: 0 auto; }
@@ -218,9 +216,10 @@
     const OFFLINE_SCORE_API = "https://wzkjgz.site/api/ic80kof9jq";
     const OFFLINE_LEADERBOARD_API = "https://wzkjgz.site/api/ic80kof9jq/all";
     const AI_LEADERBOARD_API = "https://wzkjgz.site/api/bj2awrwmfp/all";
-    const WHITELIST_API_ALL = "https://quickform.cn/api/5tmbx2o6rg/all";
-    const WHITELIST_API = "https://quickform.cn/api/5tmbx2o6rg";
-    const WHITELIST_CLEAR = "https://quickform.cn/api/5tmbx2o6rg/clear";
+    // 白名单 API 已全部更换为 wzkjgz.site
+    const WHITELIST_API_ALL = "https://wzkjgz.site/api/5tmbx2o6rg/all";
+    const WHITELIST_API = "https://wzkjgz.site/api/5tmbx2o6rg";
+    const WHITELIST_CLEAR = "https://wzkjgz.site/api/5tmbx2o6rg/clear";
     const FEEDBACK_API = "https://wzkjgz.site/api/srnos93opr";
     const WHITELIST_PASSWORD = "ssxx050505";
     const AI_DAILY_LIMIT = 1;
@@ -387,9 +386,9 @@
             correctAnswer:s.correct_answer||"A", 
             unit:s.unit||"", 
             image_base64:s.image_base64||"",
-            image_url: s.image_url || "",           // 新增
+            image_url: s.image_url || "",
             has_image: s.has_image === true || s.has_image === "true" || s.has_image === 1 || s.has_image === "1" 
-                       || (s.image_url && s.image_url.length > 10)   // 优先用 URL 判断
+                       || (s.image_url && s.image_url.length > 10) 
                        || (s.image_base64 && s.image_base64.length > 50)
         })); 
         let units=new Set(); 
@@ -425,13 +424,11 @@
         return cleanQuestion(s)||cleanQuestion(q.text); 
     }
 
-    // 修改显示函数：优先使用 image_url
     function displayOfflineImage(imgBase64, imgUrl, hasImage){ 
         let area=document.getElementById("offlineImageArea"); 
         if(hasImage){ 
-            let src = imgUrl || imgBase64;   // 优先 URL
+            let src = imgUrl || imgBase64; 
             if(src && src.length>10){ 
-                // 如果是以 data:image 开头或 http 开头，直接使用；否则补前缀
                 if (!src.startsWith('data:image') && !src.startsWith('http')) {
                     src = 'data:image/png;base64,' + src;
                 }
@@ -484,7 +481,6 @@
         let stem=getOfflineStem(q); 
         document.getElementById("offlineQuestionText").innerHTML=stem; 
         await MathJax.typesetPromise([document.getElementById("offlineQuestionText")]); 
-        // 显示配图，传入 image_base64 和 image_url
         displayOfflineImage(q.image_base64, q.image_url, q.has_image); 
         let opts=parseOptions(q.text); 
         let container=document.getElementById("offlineOptionsContainer"); 
@@ -709,7 +705,6 @@
         }catch(e){ return null; } 
     }
 
-    // 修改：只获取 URL，不转 Base64
     async function generateVariant(orig){ 
         if(!DOUBAO_API_KEY) throw new Error("无API Key"); 
         let modes=getRandomMode(); 
@@ -743,7 +738,7 @@
             try {
                 illustration = await callIllustration(cleaned, gradeText);
                 if (illustration) {
-                    imageUrl = illustration;   // 保存 URL，不下载
+                    imageUrl = illustration;
                     console.log('配图 URL:', imageUrl);
                 }
             } catch(e) {
@@ -755,15 +750,15 @@
             text:cleaned, 
             correctAnswer:correct, 
             originalId:orig.originalId, 
-            illustration,          // 同 imageUrl，用于前端展示
+            illustration,
             needIllustration:orig.need_illustration,
             gradeVersion: orig.gradeVersion || '',
             unit: orig.unit || '',
             tags: orig.tags || [],
             has_image: orig.has_image || false,
             _ip: orig._ip || '',
-            image_url: imageUrl,   // 存储 URL
-            image_base64: ''       // 弃用
+            image_url: imageUrl,
+            image_base64: ''
         }; 
     }
 
@@ -786,7 +781,6 @@
         return vars; 
     }
 
-    // 上传：只传 image_url，不再传 image_base64
     async function uploadAiVariantsToOffline(variants) {
         for (let q of variants) {
             if (!q.text || !q.correctAnswer) continue;
@@ -802,7 +796,6 @@
                 has_image: hasImage,
                 _ip: q._ip || '',
                 image_url: imageUrl
-                // image_base64 已移除
             };
             try {
                 await fetch(OFFLINE_API_BASE, {
@@ -950,7 +943,6 @@
         refreshAILeaderboard(); 
     }
 
-    // 取消 4班 huang 的限制
     async function aiStart(){ 
         let cls=document.getElementById("aiClassSelect").options[document.getElementById("aiClassSelect").selectedIndex]?.text||`${document.getElementById("aiClassSelect").value}班`; 
         let name=document.getElementById("aiStudentName").value.trim(); 
