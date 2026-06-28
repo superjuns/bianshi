@@ -198,7 +198,6 @@
         <div id="offlineStartPanel" class="card">
             <div class="title">📝 离线练习模式</div>
             <div class="sub">基于成题库 · 即时反馈 · 点击🔊手动读题</div>
-            <!-- 新增：小字显示题库数量 -->
             <div id="offlineBankCount" style="text-align:center; font-size:0.7rem; color:#7895b2; margin: -6px 0 12px 0;">📚 题库共 0 道题</div>
             <div class="whitelist-bar">
                 <span class="whitelist-status" id="offlineWhitelistStatus">📋 白名单: 加载中...</span>
@@ -477,7 +476,8 @@
             correctAnswer:s.correct_answer||"A", 
             unit:s.unit||"", 
             image_base64:s.image_base64||"", 
-            has_image:!!(s.image_base64&&s.image_base64.length>50) 
+            // 优先使用后端返回的 has_image 字段，否则根据 image_base64 长度判断
+            has_image: s.has_image === true || (s.image_base64 && s.image_base64.length > 50)
         })); 
         let units=new Set(); 
         offlineBank.forEach(q=>{if(q.unit) units.add(q.unit);}); 
@@ -513,11 +513,17 @@
         return cleanQuestion(s)||cleanQuestion(q.text); 
     }
 
-    function displayOfflineImage(imgBase64){ 
+    function displayOfflineImage(imgBase64, hasImage){ 
         let area=document.getElementById("offlineImageArea"); 
-        if(imgBase64&&imgBase64.length>50){ 
-            area.style.display="flex"; 
-            area.innerHTML=`<img class="offline-mistake-img" src="${imgBase64}" onclick="openImageModal('${imgBase64}')" style="max-width:100%; max-height:180px; border-radius:16px; cursor:pointer;">`; 
+        if(hasImage){ 
+            if(imgBase64 && imgBase64.length>50){ 
+                area.style.display="flex"; 
+                area.innerHTML=`<img class="offline-mistake-img" src="${imgBase64}" onclick="openImageModal('${imgBase64}')" style="max-width:100%; max-height:180px; border-radius:16px; cursor:pointer;">`; 
+            } else {
+                // 有配图标记但无图片数据，显示占位
+                area.style.display="flex"; 
+                area.innerHTML=`<div style="width:100%; padding:20px; text-align:center; background:#f0f4fa; border-radius:16px; color:#7895b2;">🖼️ 配图</div>`; 
+            }
         }else{ 
             area.style.display="none"; 
             area.innerHTML=""; 
@@ -555,7 +561,8 @@
         let stem=getOfflineStem(q); 
         document.getElementById("offlineQuestionText").innerHTML=stem; 
         await MathJax.typesetPromise([document.getElementById("offlineQuestionText")]); 
-        displayOfflineImage(q.image_base64); 
+        // 显示配图，传入 has_image 标记
+        displayOfflineImage(q.image_base64, q.has_image); 
         let opts=parseOptions(q.text); 
         let container=document.getElementById("offlineOptionsContainer"); 
         container.innerHTML=""; 
@@ -563,77 +570,49 @@
         opts.forEach(opt=>{ 
             let div=document.createElement("div"); 
             div.className=`option ${saved===opt.letter?'selected':''}`; 
+            // 提交后禁用选择
             if(offlineSubmitted) div.style.pointerEvents="none"; 
             div.setAttribute("data-letter",opt.letter); 
             div.innerHTML=`<span class="option-prefix">${opt.letter}</span><span class="option-text">${escapeHtml(opt.text)}</span>`; 
             container.appendChild(div); 
         }); 
-        document.getElementById("offlinePrevBtn").disabled=offlineCurr===0; 
-        document.getElementById("offlineNextBtn").disabled=offlineCurr===offlineQuestions.length-1; 
+        document.getElementById("offlinePrevBtn").disabled=offlineCurr===0 || offlineSubmitted; 
+        document.getElementById("offlineNextBtn").disabled=offlineCurr===offlineQuestions.length-1 || offlineSubmitted; 
         document.getElementById("offlineSubmitBtn").disabled=offlineSubmitted; 
     }
 
+    // 选项点击事件
     document.getElementById("offlineOptionsContainer")?.addEventListener("click",e=>{ 
         if(!offlineActive||offlineSubmitted) return; 
         let t=e.target.closest(".option"); 
         if(!t) return; 
         let letter=t.getAttribute("data-letter"); 
         if(letter){ 
-            offlineSelected=letter; 
-            document.querySelectorAll("#offlineOptionsContainer .option").forEach(opt=>opt.classList.remove("selected")); 
-            t.classList.add("selected"); 
             offlineAnswers[offlineCurr]=letter; 
+            // 重新渲染当前题目以更新选中样式
+            renderOfflineQ(); 
         } 
     });
 
     document.getElementById("offlinePrevBtn")?.addEventListener("click",()=>{ 
-        if(offlineActive&&offlineCurr>0){ offlineCurr--; renderOfflineQ(); } 
+        if(offlineActive&&!offlineSubmitted&&offlineCurr>0){ 
+            offlineCurr--; 
+            renderOfflineQ(); 
+        } 
     });
 
     document.getElementById("offlineNextBtn")?.addEventListener("click",()=>{ 
-        if(offlineActive&&offlineCurr<offlineQuestions.length-1){ offlineCurr++; renderOfflineQ(); } 
+        if(offlineActive&&!offlineSubmitted&&offlineCurr<offlineQuestions.length-1){ 
+            offlineCurr++; 
+            renderOfflineQ(); 
+        } 
     });
 
-    async function offlineSubmitAnswer(){ 
-        if(!offlineActive||offlineSubmitted) return; 
-        if(!offlineSelected){ 
-            let fb=document.getElementById("offlineFeedback"); 
-            fb.innerHTML="⚠️ 请先选择答案"; 
-            fb.className="feedback wrong-feedback"; 
-            fb.classList.remove("hide"); 
-            return; 
-        } 
-        let q=offlineQuestions[offlineCurr]; 
-        let isCorrect=offlineSelected===q.correctAnswer; 
-        if(isCorrect){ 
-            offlineAnswers[offlineCurr]=offlineSelected; 
-            offlineSubmitted=true; 
-            let fb=document.getElementById("offlineFeedback"); 
-            fb.innerHTML="✅ 回答正确！进入下一题"; 
-            fb.className="feedback correct-feedback"; 
-            fb.classList.remove("hide"); 
-            document.getElementById("offlineSubmitBtn").disabled=true; 
-            stopOfflineSpeak(); 
-            setTimeout(()=>{ 
-                if(offlineCurr===offlineQuestions.length-1) offlineFinish(); 
-                else{ 
-                    offlineCurr++; 
-                    offlineSubmitted=false; 
-                    offlineSelected=""; 
-                    renderOfflineQ(); 
-                    fb.classList.add("hide"); 
-                    document.getElementById("offlineSubmitBtn").disabled=false; 
-                } 
-            },800); 
-        } else{ 
-            let fb=document.getElementById("offlineFeedback"); 
-            fb.innerHTML="❌ 回答错误，请再试试"; 
-            fb.className="feedback wrong-feedback"; 
-            fb.classList.remove("hide"); 
-        } 
-    }
-
+    // 提交答卷 - 一次性批改全部（无确认提示）
     async function offlineFinish(){ 
+        if(!offlineActive || offlineSubmitted) return;
+        // 直接提交，无确认弹窗
+        offlineSubmitted = true;
         stopOfflineTimer(); 
         offlineActive=false; 
         stopOfflineSpeak(); 
@@ -692,6 +671,9 @@
         refreshOfflineLeaderboard(); 
     }
 
+    // 绑定提交按钮
+    document.getElementById("offlineSubmitBtn")?.addEventListener("click", offlineFinish);
+
     function stopOfflineSpeak(){ 
         if(window.speechSynthesis) window.speechSynthesis.cancel(); 
         offlineUtter=null; 
@@ -727,8 +709,6 @@
         if(offlineActive&&offlineQuestions[offlineCurr]) speakOfflineText(getOfflineStem(offlineQuestions[offlineCurr])); 
     });
 
-    document.getElementById("offlineSubmitBtn")?.addEventListener("click",offlineSubmitAnswer);
-
     async function offlineStart(){ 
         let cls=document.getElementById("offlineClassSelect").options[document.getElementById("offlineClassSelect").selectedIndex]?.text||`${document.getElementById("offlineClassSelect").value}班`; 
         let name=document.getElementById("offlineStudentName").value.trim(); 
@@ -739,7 +719,6 @@
             warn.innerHTML=`⛔ 认证失败：您（${cls}·${name}）不在白名单内`; 
             return; 
         } 
-        // 离线模式不限制次数，直接开始
         offlineSelectedClass=cls; 
         offlineStudentName=name; 
         let unit=document.getElementById("offlineUnitSelect").value; 
@@ -753,7 +732,6 @@
             offlineCurr=0; 
             offlineActive=true; 
             offlineSubmitted=false; 
-            offlineSelected=""; 
             startOfflineTimer(); 
             await renderOfflineQ(); 
             loading.remove(); 
