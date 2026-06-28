@@ -61,25 +61,10 @@
         .loading-text { background: white; padding: 8px 20px; border-radius: 60px; font-weight: 500; }
         footer { text-align: center; font-size: 0.65rem; color: #7895b2; margin-top: 20px; }
         .speaker-btn { background: #eef3fc; border: none; border-radius: 50%; width: 40px; height: 40px; font-size: 1.2rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; color: #1e6f9f; }
-        /* 排行榜样式 - 滚动列表 */
-        .rank-scroll-container {
-            max-height: 280px;
-            overflow-y: auto;
-            border-radius: 28px;
-            background: white;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        }
-        .rank-scroll-container::-webkit-scrollbar {
-            width: 6px;
-        }
-        .rank-scroll-container::-webkit-scrollbar-track {
-            background: #f0f4fa;
-            border-radius: 10px;
-        }
-        .rank-scroll-container::-webkit-scrollbar-thumb {
-            background: #cde0ef;
-            border-radius: 10px;
-        }
+        .rank-scroll-container { max-height: 280px; overflow-y: auto; border-radius: 28px; background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .rank-scroll-container::-webkit-scrollbar { width: 6px; }
+        .rank-scroll-container::-webkit-scrollbar-track { background: #f0f4fa; border-radius: 10px; }
+        .rank-scroll-container::-webkit-scrollbar-thumb { background: #cde0ef; border-radius: 10px; }
         .rank-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
         .rank-table th, .rank-table td { padding: 12px 8px; text-align: center; border-bottom: 1px solid #eef2f8; }
         .rank-table th { background: #eef3fc; color: #2c6e9e; font-weight: 600; font-size: 0.7rem; position: sticky; top: 0; z-index: 2; }
@@ -100,85 +85,26 @@
         .rank-time { font-size: 0.75rem; }
         .warning-box { background: #fff3e0; border-left: 4px solid #e6a017; padding: 12px; border-radius: 20px; margin: 12px 0; font-size: 0.8rem; color: #a46400; }
 
-        /* ========== AI模式纯白风格 ========== */
-        #aiModeArea .card {
-            background: #ffffff !important;
-            backdrop-filter: none !important;
-            border: 1px solid #e0e8f0 !important;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.06) !important;
-        }
-        #aiModeArea .title {
-            background: none !important;
-            color: #1e6f9f !important;
-            background-clip: unset !important;
-            -webkit-background-clip: unset !important;
-        }
-        #aiModeArea .whitelist-bar {
-            background: #f5f9ff !important;
-            border: 1px solid #e0e8f0 !important;
-        }
-        #aiModeArea .whitelist-status {
-            background: white !important;
-        }
-        #aiModeArea .question-box {
-            background: #f8fafc !important;
-            border-left: 5px solid #1e6f9f !important;
-        }
-        #aiModeArea .options-area .option {
-            background: white !important;
-            border-color: #d0dce8 !important;
-        }
-        #aiModeArea .options-area .option.selected {
-            background: #e7f0ff !important;
-            border-color: #1e6f9f !important;
-        }
-        #aiModeArea .timer-area {
-            background: #f0f4fa !important;
-        }
-        #aiModeArea .feedback {
-            background: #f8fafc !important;
-        }
-        #aiModeArea .feedback.correct-feedback {
-            background: #e1f5e8 !important;
-        }
-        #aiModeArea .feedback.wrong-feedback {
-            background: #ffe8e8 !important;
-        }
-        #aiModeArea .btn-secondary {
-            background: #f0f4fa !important;
-            border: 1px solid #d0dce8 !important;
-        }
-        #aiModeArea .icon-btn {
-            background: #f0f4fa !important;
-            border: 1px solid #d0dce8 !important;
-        }
-        #aiModeArea .nav-btn {
-            background: #f0f4fa !important;
-        }
-        #aiModeArea .rank-scroll-container {
-            background: white !important;
-        }
-        #aiModeArea .rank-table th {
-            background: #f0f4fa !important;
-        }
-        #aiModeArea .rank-table td {
-            background: white !important;
-        }
-        #aiModeArea .empty-rank {
-            background: #f8fafc !important;
-        }
-        #aiModeArea .question-illustration {
-            background: #f8fafc !important;
-            border-color: #e0e8f0 !important;
-        }
-        #aiModeArea .ai-illustration-btn {
-            background: #f0f4fa !important;
-            border-color: #d0dce8 !important;
-            color: #1e6f9f !important;
-        }
-        #aiModeArea .speaker-btn {
-            background: #f0f4fa !important;
-        }
+        #aiModeArea .card { background: #ffffff !important; backdrop-filter: none !important; border: 1px solid #e0e8f0 !important; box-shadow: 0 4px 12px rgba(0,0,0,0.06) !important; }
+        #aiModeArea .title { background: none !important; color: #1e6f9f !important; background-clip: unset !important; -webkit-background-clip: unset !important; }
+        #aiModeArea .whitelist-bar { background: #f5f9ff !important; border: 1px solid #e0e8f0 !important; }
+        #aiModeArea .whitelist-status { background: white !important; }
+        #aiModeArea .question-box { background: #f8fafc !important; border-left: 5px solid #1e6f9f !important; }
+        #aiModeArea .options-area .option { background: white !important; border-color: #d0dce8 !important; }
+        #aiModeArea .options-area .option.selected { background: #e7f0ff !important; border-color: #1e6f9f !important; }
+        #aiModeArea .timer-area { background: #f0f4fa !important; }
+        #aiModeArea .feedback { background: #f8fafc !important; }
+        #aiModeArea .feedback.correct-feedback { background: #e1f5e8 !important; }
+        #aiModeArea .feedback.wrong-feedback { background: #ffe8e8 !important; }
+        #aiModeArea .btn-secondary { background: #f0f4fa !important; border: 1px solid #d0dce8 !important; }
+        #aiModeArea .icon-btn { background: #f0f4fa !important; border: 1px solid #d0dce8 !important; }
+        #aiModeArea .nav-btn { background: #f0f4fa !important; }
+        #aiModeArea .rank-scroll-container { background: white !important; }
+        #aiModeArea .rank-table th { background: #f0f4fa !important; }
+        #aiModeArea .rank-table td { background: white !important; }
+        #aiModeArea .empty-rank { background: #f8fafc !important; }
+        #aiModeArea .question-illustration { background: #f8fafc !important; border-color: #e0e8f0 !important; }
+        #aiModeArea .speaker-btn { background: #f0f4fa !important; }
         #aiModeArea .sub { color: #5a7d9a !important; }
         #aiModeArea .input-group label { color: #2c6e9e !important; }
         #aiModeArea select, #aiModeArea input { background: white !important; border-color: #d0dce8 !important; }
@@ -238,7 +164,7 @@
         </div>
     </div>
 
-    <!-- AI 模式区域（纯白风格） -->
+    <!-- AI 模式区域 -->
     <div id="aiModeArea" style="display: none;">
         <div id="aiStartPanel" class="card">
             <div class="title">🤖 AI变式闯关营</div>
@@ -285,17 +211,16 @@
 
 <script>
     // ================= 数据源 =================
-    const AI_API_BASE = "https://wzkjgz.site/api/auotd4g9jy";                     // AI变式（含配图标记）
-    const OFFLINE_API_BASE = "https://wzkjgz.site/api/nh77dub2er";                 // 离线成题（含标准答案、图片）
-    const OFFLINE_SCORE_API = "https://wzkjgz.site/api/ic80kof9jq";                // 离线成绩提交
-    const OFFLINE_LEADERBOARD_API = "https://wzkjgz.site/api/ic80kof9jq/all";      // 离线排行榜
-    const AI_LEADERBOARD_API = "https://quickform.cn/api/bj2awrwmfp/all";           // AI排行榜
+    const AI_API_BASE = "https://wzkjgz.site/api/auotd4g9jy";
+    const OFFLINE_API_BASE = "https://wzkjgz.site/api/nh77dub2er";
+    const OFFLINE_SCORE_API = "https://wzkjgz.site/api/ic80kof9jq";
+    const OFFLINE_LEADERBOARD_API = "https://wzkjgz.site/api/ic80kof9jq/all";
+    const AI_LEADERBOARD_API = "https://wzkjgz.site/api/bj2awrwmfp/all";        // 已修改
     const WHITELIST_API_ALL = "https://quickform.cn/api/5tmbx2o6rg/all";
     const WHITELIST_API = "https://quickform.cn/api/5tmbx2o6rg";
     const WHITELIST_CLEAR = "https://quickform.cn/api/5tmbx2o6rg/clear";
-    const FEEDBACK_API = "https://quickform.cn/api/srnos93opr";                     // 学情反馈（教师端正确率统计）
+    const FEEDBACK_API = "https://wzkjgz.site/api/srnos93opr";                   // 已修改
     const WHITELIST_PASSWORD = "ssxx050505";
-    // AI模式每天限制1次，离线模式不限制
     const AI_DAILY_LIMIT = 1;
     const PRESET_API_KEY = "ark-ff1505b4-a605-4fc0-9dca-3e9c0c1d690c-dbc4e";
     const PRESET_ENDPOINT = "https://ark.cn-beijing.volces.com/api/v3/chat/completions";
@@ -317,7 +242,7 @@
     function cleanQuestion(t){ if(!t) return ''; let s=t; s=s.replace(/[【\[]答案[】\]]\s*[A-C]/gi,'').replace(/正确答案[：:]\s*[A-C]/gi,'').replace(/答案[：:]\s*[A-C]/gi,''); s=s.replace(/降低难度版|提升难度版/g,''); let lines=s.split(/\r?\n/), out=[], found=false; for(let l of lines){ l=l.trim(); if(!l) continue; if(found && (l.match(/^\d+\./)||l.match(/^\(\d+\)/))) break; out.push(l); if(!found && (l.match(/^\d+\./)||l.match(/^\(\d+\)/)||l.length>10)) found=true; } s=out.join('\n').trim(); return cleanMath(s)||cleanMath(t); }
     function parseOptions(txt){ let opts=[]; let match; let re=/([A-C])[\.\、]\s*([^A-C]*?)(?=[A-C][\.\、]|$)/gi; while((match=re.exec(txt))!==null){ let raw=match[2].trim().replace(/\s+/g,' '); if(raw.length>80) raw=raw.slice(0,80)+'…'; opts.push({letter:match[1],text:raw||`选项${match[1]}`}); } if(opts.length<3){ let lines=txt.split(/\r?\n/); for(let l of lines){ let m=l.match(/^([A-C])[\.\、]\s*(.+)/); if(m) opts.push({letter:m[1],text:m[2].trim().slice(0,80)}); } } while(opts.length<3) opts.push({letter:String.fromCharCode(65+opts.length),text:`默认选项${String.fromCharCode(65+opts.length)}`}); return opts.slice(0,3); }
 
-    // ================= 白名单（共享） =================
+    // ================= 白名单 =================
     async function fetchWhitelist(){ try{ let r=await fetch(WHITELIST_API_ALL); if(!r.ok) throw new Error(); let d=await r.json(); whitelist=(d.submissions||[]).map(s=>({class:s.class||"",name:s.name||""})).filter(i=>i.class&&i.name); document.querySelectorAll(".whitelist-status").forEach(el=>el.innerHTML=`📋 白名单: ${whitelist.length} 位学生`); }catch(e){ whitelist=[]; } }
     function isInWhitelist(cls,name){ return whitelist.some(w=>w.class===cls.trim()&&w.name===name.trim()); }
     async function uploadWhitelist(data){ let ok=0; for(let i of data){ try{ await fetch(WHITELIST_API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({class:i.class,name:i.name,timestamp:new Date().toISOString()})}); ok++; }catch(e){} } return ok; }
@@ -326,7 +251,6 @@
     function parseExcelToWhitelist(ab){ let wb=XLSX.read(ab,{type:'array'}); let sheet=wb.Sheets[wb.SheetNames[0]]; let rows=XLSX.utils.sheet_to_json(sheet,{header:1}); if(!rows||rows.length<2) throw new Error("至少需要标题行和数据行"); let headers=rows[0].map(c=>String(c||"").trim()); let classIdx=-1,nameIdx=-1; for(let i=0;i<headers.length;i++){ if(/班级|class/i.test(headers[i])) classIdx=i; if(/姓名|名字|name/i.test(headers[i])) nameIdx=i; } if(classIdx===-1||nameIdx===-1) throw new Error("未找到班级或姓名列"); let res=[]; for(let i=1;i<rows.length;i++){ let row=rows[i]; if(!row||row.length===0) continue; let cls=row[classIdx]?String(row[classIdx]).trim():""; let nm=row[nameIdx]?String(row[nameIdx]).trim():""; if(cls&&nm) res.push({class:cls,name:nm}); } if(!res.length) throw new Error("未提取到有效数据"); return res; }
     async function parseDocxToWhitelist(ab){ let res=await mammoth.extractRawText({arrayBuffer:ab}); let text=res.value; let lines=text.split(/\r?\n/); let cand=[]; for(let l of lines){ l=l.trim(); if(!l) continue; let m=l.match(/班级[：:]\s*([^ 姓名\t]+)\s*姓名[：:]\s*(.+)/i); if(m){ cand.push({class:m[1].trim(),name:m[2].trim()}); continue; } let parts=l.split(/\t|\s{2,}/); if(parts.length>=2){ let cls=parts[0].trim(), nm=parts[1].trim(); if((cls.includes("班")||/^\d+班$/.test(cls))&&nm) cand.push({class:cls,name:nm}); } else{ let sim=l.match(/^(\S+班)\s+(\S+)$/); if(sim) cand.push({class:sim[1],name:sim[2]}); } } if(!cand.length) throw new Error("无法解析班级/姓名"); return cand; }
 
-    // 绑定白名单上传/清除事件（两个模式共用）
     document.getElementById("offlineWhitelistUpload")?.addEventListener("change",async e=>{ if(!verifyPassword()) return; let file=e.target.files[0]; if(!file) return; let ext=file.name.split('.').pop().toLowerCase(); if(!['xlsx','xls','docx'].includes(ext)){ alert("不支持的文件格式"); return; } let ab=await file.arrayBuffer(); try{ let data=ext==='docx'?await parseDocxToWhitelist(ab):parseExcelToWhitelist(ab); let cnt=await uploadWhitelist(data); await fetchWhitelist(); alert(`✅ 成功上传 ${cnt}/${data.length} 条记录`); }catch(err){ alert("解析失败:"+err.message); } e.target.value=''; });
     document.getElementById("aiWhitelistUpload")?.addEventListener("change",async e=>{ if(!verifyPassword()) return; let file=e.target.files[0]; if(!file) return; let ext=file.name.split('.').pop().toLowerCase(); if(!['xlsx','xls','docx'].includes(ext)){ alert("不支持的文件格式"); return; } let ab=await file.arrayBuffer(); try{ let data=ext==='docx'?await parseDocxToWhitelist(ab):parseExcelToWhitelist(ab); let cnt=await uploadWhitelist(data); await fetchWhitelist(); alert(`✅ 成功上传 ${cnt}/${data.length} 条记录`); }catch(err){ alert("解析失败:"+err.message); } e.target.value=''; });
     document.getElementById("offlineClearWhitelistBtn")?.addEventListener("click",async()=>{ if(!verifyPassword()) return; if(confirm("确定清空云端白名单吗？")){ if(await clearWhitelistAPI()) alert("已清空"); else alert("清空失败"); } });
@@ -334,7 +258,6 @@
 
     // ================= 离线模式排行榜 =================
     async function fetchOfflineLeaderboard(){ try{ let r=await fetch(OFFLINE_LEADERBOARD_API); if(!r.ok) throw new Error(); let d=await r.json(); return d.submissions||[]; }catch(e){ return []; } }
-    
     function getOfflineTodayFullScoreList(subs) {
         const today = new Date();
         const todayStr = today.toISOString().slice(0, 10);
@@ -368,7 +291,6 @@
         }
         return uniqueList;
     }
-
     function renderOfflineLeaderboard(subs, containerId) {
         const container = document.getElementById(containerId);
         if (!container) return;
@@ -380,18 +302,11 @@
         let html = `<div class="rank-scroll-container"><table class="rank-table"><thead><tr><th>🏅</th><th>班级</th><th>姓名</th><th>得分</th><th>用时</th></tr></thead><tbody>`;
         todayFull.forEach((item, idx) => {
             const medal = idx === 0 ? "🏅" : (idx === 1 ? "🥈" : (idx === 2 ? "🥉" : `${idx+1}`));
-            html += `<tr>
-                <td class="rank-medal">${medal}</td>
-                <td class="rank-class">${escapeHtml(item.class || '')}</td>
-                <td class="rank-name">${escapeHtml(item.name || '')}</td>
-                <td class="rank-score">${item.score}/${item.total || 5}</td>
-                <td class="rank-time">${item.time || '--:--'}</td>
-            </tr>`;
+            html += `<tr><td class="rank-medal">${medal}</td><td class="rank-class">${escapeHtml(item.class || '')}</td><td class="rank-name">${escapeHtml(item.name || '')}</td><td class="rank-score">${item.score}/${item.total || 5}</td><td class="rank-time">${item.time || '--:--'}</td></tr>`;
         });
         html += `</tbody></table></div><div class="leaderboard-footer">🎉 今日满分人数: ${todayFull.length}</div>`;
         container.innerHTML = html;
     }
-
     async function refreshOfflineLeaderboard() {
         const container = document.getElementById("offlineLeaderboardContent");
         if (container) container.innerHTML = '<div class="empty-rank">加载中...</div>';
@@ -445,13 +360,7 @@
         let html = `<div class="rank-scroll-container"><table class="rank-table"><thead><tr><th>🏅</th><th>班级</th><th>姓名</th><th>得分</th><th>用时</th></tr></thead><tbody>`;
         todayFull.forEach((item, idx) => {
             const medal = idx === 0 ? "🏅" : (idx === 1 ? "🥈" : (idx === 2 ? "🥉" : `${idx+1}`));
-            html += `<tr>
-                <td class="rank-medal">${medal}</td>
-                <td class="rank-class">${escapeHtml(item.class || '')}</td>
-                <td class="rank-name">${escapeHtml(item.name || '')}</td>
-                <td class="rank-score">${item.score}/${item.total || 5}</td>
-                <td class="rank-time">${item.time || '--:--'}</td>
-            </tr>`;
+            html += `<tr><td class="rank-medal">${medal}</td><td class="rank-class">${escapeHtml(item.class || '')}</td><td class="rank-name">${escapeHtml(item.name || '')}</td><td class="rank-score">${item.score}/${item.total || 5}</td><td class="rank-time">${item.time || '--:--'}</td></tr>`;
         });
         html += `</tbody></table></div><div class="leaderboard-footer">🎉 今日满分人数: ${todayFull.length}</div>`;
         container.innerHTML = html;
@@ -463,7 +372,7 @@
         renderAILeaderboard(subs, "aiLeaderboardContent");
     }
 
-    // ================= 离线模式逻辑（不限制次数） =================
+    // ================= 离线模式逻辑 =================
     let offlineBank=[], offlineQuestions=[], offlineAnswers=[], offlineCurr=0, offlineActive=false, offlineSelected="", offlineSubmitted=false, offlineUtter=null;
     let offlineStartTime=null, offlineTimer=null, offlineSelectedClass="", offlineStudentName="";
 
@@ -476,15 +385,13 @@
             correctAnswer:s.correct_answer||"A", 
             unit:s.unit||"", 
             image_base64:s.image_base64||"", 
-            // 优先使用后端返回的 has_image 字段，否则根据 image_base64 长度判断
-            has_image: s.has_image === true || (s.image_base64 && s.image_base64.length > 50)
+            has_image: s.has_image === true || s.has_image === "true" || s.has_image === 1 || s.has_image === "1" || (s.image_base64 && s.image_base64.length > 50)
         })); 
         let units=new Set(); 
         offlineBank.forEach(q=>{if(q.unit) units.add(q.unit);}); 
         let sel=document.getElementById("offlineUnitSelect"); 
         sel.innerHTML='<option value="__ALL__">全部单元</option>'; 
         [...units].sort().forEach(u=>{let opt=document.createElement("option"); opt.value=u; opt.textContent=u; sel.appendChild(opt);}); 
-        // 更新题库数量显示
         const countEl = document.getElementById("offlineBankCount");
         if (countEl) countEl.textContent = `📚 题库共 ${offlineBank.length} 道题`;
         return offlineBank; 
@@ -516,11 +423,20 @@
     function displayOfflineImage(imgBase64, hasImage){ 
         let area=document.getElementById("offlineImageArea"); 
         if(hasImage){ 
-            if(imgBase64 && imgBase64.length>50){ 
+            if(imgBase64 && imgBase64.length>10){ 
+                let src = imgBase64;
+                if (!src.startsWith('data:image')) {
+                    src = 'data:image/png;base64,' + src;
+                }
                 area.style.display="flex"; 
-                area.innerHTML=`<img class="offline-mistake-img" src="${imgBase64}" onclick="openImageModal('${imgBase64}')" style="max-width:100%; max-height:180px; border-radius:16px; cursor:pointer;">`; 
+                area.innerHTML = `
+                    <img class="offline-mistake-img" 
+                         src="${src}" 
+                         onerror="this.style.display='none'; this.parentElement.innerHTML='<div style=\\'width:100%; padding:20px; text-align:center; background:#f0f4fa; border-radius:16px; color:#7895b2;\\'>🖼️ 配图加载失败</div>';"
+                         onclick="openImageModal('${src}')" 
+                         style="max-width:100%; max-height:180px; border-radius:16px; cursor:pointer;">
+                `; 
             } else {
-                // 有配图标记但无图片数据，显示占位
                 area.style.display="flex"; 
                 area.innerHTML=`<div style="width:100%; padding:20px; text-align:center; background:#f0f4fa; border-radius:16px; color:#7895b2;">🖼️ 配图</div>`; 
             }
@@ -561,7 +477,6 @@
         let stem=getOfflineStem(q); 
         document.getElementById("offlineQuestionText").innerHTML=stem; 
         await MathJax.typesetPromise([document.getElementById("offlineQuestionText")]); 
-        // 显示配图，传入 has_image 标记
         displayOfflineImage(q.image_base64, q.has_image); 
         let opts=parseOptions(q.text); 
         let container=document.getElementById("offlineOptionsContainer"); 
@@ -570,7 +485,6 @@
         opts.forEach(opt=>{ 
             let div=document.createElement("div"); 
             div.className=`option ${saved===opt.letter?'selected':''}`; 
-            // 提交后禁用选择
             if(offlineSubmitted) div.style.pointerEvents="none"; 
             div.setAttribute("data-letter",opt.letter); 
             div.innerHTML=`<span class="option-prefix">${opt.letter}</span><span class="option-text">${escapeHtml(opt.text)}</span>`; 
@@ -581,7 +495,6 @@
         document.getElementById("offlineSubmitBtn").disabled=offlineSubmitted; 
     }
 
-    // 选项点击事件
     document.getElementById("offlineOptionsContainer")?.addEventListener("click",e=>{ 
         if(!offlineActive||offlineSubmitted) return; 
         let t=e.target.closest(".option"); 
@@ -589,29 +502,20 @@
         let letter=t.getAttribute("data-letter"); 
         if(letter){ 
             offlineAnswers[offlineCurr]=letter; 
-            // 重新渲染当前题目以更新选中样式
             renderOfflineQ(); 
         } 
     });
 
     document.getElementById("offlinePrevBtn")?.addEventListener("click",()=>{ 
-        if(offlineActive&&!offlineSubmitted&&offlineCurr>0){ 
-            offlineCurr--; 
-            renderOfflineQ(); 
-        } 
+        if(offlineActive&&!offlineSubmitted&&offlineCurr>0){ offlineCurr--; renderOfflineQ(); } 
     });
 
     document.getElementById("offlineNextBtn")?.addEventListener("click",()=>{ 
-        if(offlineActive&&!offlineSubmitted&&offlineCurr<offlineQuestions.length-1){ 
-            offlineCurr++; 
-            renderOfflineQ(); 
-        } 
+        if(offlineActive&&!offlineSubmitted&&offlineCurr<offlineQuestions.length-1){ offlineCurr++; renderOfflineQ(); } 
     });
 
-    // 提交答卷 - 一次性批改全部（无确认提示）
     async function offlineFinish(){ 
         if(!offlineActive || offlineSubmitted) return;
-        // 直接提交，无确认弹窗
         offlineSubmitted = true;
         stopOfflineTimer(); 
         offlineActive=false; 
@@ -633,7 +537,6 @@
         document.getElementById("offlineStartPanel").style.display="none"; 
         document.getElementById("offlineQuizPanel").style.display="none"; 
         document.getElementById("offlineResultPanel").style.display="block"; 
-        // 提交成绩到离线排行榜API
         try{ 
             await fetch(OFFLINE_SCORE_API,{ 
                 method:"POST", 
@@ -648,7 +551,6 @@
                 }) 
             }); 
         }catch(e){} 
-        // 提交学情反馈到教师端正确率API
         try{ 
             await fetch(FEEDBACK_API,{ 
                 method:"POST", 
@@ -661,7 +563,6 @@
                 }) 
             }); 
         }catch(e){} 
-        // 更新每日练习次数（仅用于记录，不限制）
         let key=`${offlineSelectedClass}|${offlineStudentName}`; 
         let attempts=JSON.parse(localStorage.getItem("quiz_attempts")||'{}'); 
         let today=new Date().toISOString().slice(0,10); 
@@ -671,7 +572,6 @@
         refreshOfflineLeaderboard(); 
     }
 
-    // 绑定提交按钮
     document.getElementById("offlineSubmitBtn")?.addEventListener("click", offlineFinish);
 
     function stopOfflineSpeak(){ 
@@ -745,7 +645,6 @@
     }
 
     document.getElementById("offlineStartBtn")?.addEventListener("click",offlineStart);
-
     document.getElementById("offlineRestartBtn")?.addEventListener("click",()=>{ 
         stopOfflineTimer(); 
         stopOfflineSpeak(); 
@@ -754,7 +653,6 @@
         document.getElementById("offlineResultPanel").style.display="none"; 
         offlineActive=false; 
     });
-
     document.getElementById("offlineShareBackBtn")?.addEventListener("click",()=>{ 
         stopOfflineTimer(); 
         stopOfflineSpeak(); 
@@ -763,10 +661,9 @@
         document.getElementById("offlineResultPanel").style.display="none"; 
         offlineActive=false; 
     });
-
     document.getElementById("offlineRefreshLeaderboardBtn")?.addEventListener("click",refreshOfflineLeaderboard);
 
-    // ================= AI 模式逻辑（每天限制1次） =================
+    // ================= AI 模式逻辑 =================
     let aiQuestions=[], aiAnswers=[], aiCurr=0, aiActive=false, aiTimer=null, aiStartTime=null, aiSelectedClass="", aiStudentName="", aiUtter=null;
     let allMistakes=[];
     const VARIANT_MODES=["情境转换","数据修改","跨学科","提升难度","降低难度","综合变化"];
@@ -791,6 +688,35 @@
         sel.innerHTML='<option value="__ALL__">全部单元</option>'; 
         [...units].sort().forEach(u=>{let opt=document.createElement("option"); opt.value=u; opt.textContent=u; sel.appendChild(opt);}); 
     }
+
+    // 图片压缩工具函数
+    function compressImage(dataUrl, maxWidth=800, maxHeight=800, quality=0.7) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => {
+                let width = img.width;
+                let height = img.height;
+                if (width > maxWidth) {
+                    height = height * (maxWidth / width);
+                    width = maxWidth;
+                }
+                if (height > maxHeight) {
+                    width = width * (maxHeight / height);
+                    height = maxHeight;
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                const compressed = canvas.toDataURL('image/jpeg', quality);
+                resolve(compressed);
+            };
+            img.onerror = reject;
+            img.src = dataUrl;
+        });
+    }
+
     async function callIllustration(question,grade){ 
         if(!DOUBAO_API_KEY) return null; 
         try{ 
@@ -801,6 +727,7 @@
             return data.data?.[0]?.url||null; 
         }catch(e){ return null; } 
     }
+
     async function generateVariant(orig){ 
         if(!DOUBAO_API_KEY) throw new Error("无API Key"); 
         let modes=getRandomMode(); 
@@ -844,6 +771,7 @@
             _ip: orig._ip || ''
         }; 
     }
+
     async function buildAiQuestions(unit){ 
         let pool=unit==="__ALL__"?allMistakes:allMistakes.filter(m=>m.unit===unit); 
         if(!pool.length) throw new Error(`单元“${unit}”下没有错题`); 
@@ -862,6 +790,49 @@
         } 
         return vars; 
     }
+
+    // 上传AI变式到离线题库，并压缩配图
+    async function uploadAiVariantsToOffline(variants) {
+        for (let q of variants) {
+            if (!q.text || !q.correctAnswer) continue;
+            let imageBase64 = '';
+            if (q.illustration) {
+                try {
+                    const response = await fetch(q.illustration);
+                    const blob = await response.blob();
+                    const dataUrl = await new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result);
+                        reader.readAsDataURL(blob);
+                    });
+                    imageBase64 = await compressImage(dataUrl, 800, 800, 0.7);
+                } catch (e) {
+                    console.warn('下载或压缩配图失败:', e);
+                }
+            }
+            let payload = {
+                text: q.text,
+                correct_answer: q.correctAnswer,
+                gradeVersion: q.gradeVersion || '',
+                unit: q.unit || '',
+                originalId: q.originalId || '',
+                tags: q.tags ? q.tags.join(',') : '',
+                has_image: q.needIllustration ? "true" : "false",
+                _ip: q._ip || '',
+                image_base64: imageBase64
+            };
+            try {
+                await fetch(OFFLINE_API_BASE, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+            } catch(e) {
+                console.warn('上传变式到离线题库失败', e);
+            }
+        }
+    }
+
     function startAiTimer(){ 
         if(aiTimer) clearInterval(aiTimer); 
         aiStartTime=Date.now(); 
@@ -876,7 +847,11 @@
     }
     async function uploadScore(c,n,answers,score,total,time){ 
         try{ 
-            await fetch("https://quickform.cn/api/bj2awrwmfp",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({class:c,name:n,answers,score,total,time})}); 
+            await fetch("https://wzkjgz.site/api/bj2awrwmfp",{  // 已修改
+                method:"POST",
+                headers:{"Content-Type":"application/json"},
+                body:JSON.stringify({class:c,name:n,answers,score,total,time})
+            }); 
         }catch(e){} 
     }
     async function reportFeedback(cls,name,results){ 
@@ -884,32 +859,6 @@
         try{ 
             await fetch(FEEDBACK_API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({class:cls,name:name,timestamp:new Date().toISOString(),feedback:results})}); 
         }catch(e){} 
-    }
-
-    // 上传AI变式到离线题库，携带母题元数据，has_image使用母题的need_illustration
-    async function uploadAiVariantsToOffline(variants) {
-        for (let q of variants) {
-            if (!q.text || !q.correctAnswer) continue;
-            let payload = {
-                text: q.text,
-                correct_answer: q.correctAnswer,
-                gradeVersion: q.gradeVersion || '',
-                unit: q.unit || '',
-                originalId: q.originalId || '',
-                tags: q.tags ? q.tags.join(',') : '',
-                has_image: q.needIllustration ? "true" : "false",
-                _ip: q._ip || ''
-            };
-            try {
-                await fetch(OFFLINE_API_BASE, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-            } catch(e) {
-                console.warn('上传变式到离线题库失败', e);
-            }
-        }
     }
 
     function stopAiSpeak(){ 
@@ -1011,8 +960,7 @@
         document.getElementById("aiResultPanel").style.display="block"; 
         await uploadScore(aiSelectedClass,aiStudentName,aiAnswers,correct,aiQuestions.length,timeStr); 
         if(origResults.length) await reportFeedback(aiSelectedClass,aiStudentName,origResults);
-        uploadAiVariantsToOffline(aiQuestions);
-        // 更新每日练习次数（AI模式限制1次）
+        await uploadAiVariantsToOffline(aiQuestions);
         let key=`${aiSelectedClass}|${aiStudentName}`; 
         let attempts=JSON.parse(localStorage.getItem("quiz_attempts")||'{}'); 
         let today=new Date().toISOString().slice(0,10); 
@@ -1031,13 +979,14 @@
             warn.innerHTML=`⛔ 认证失败：您（${cls}·${name}）不在白名单内`; 
             return; 
         } 
-        // AI模式每天限制1次
         let attempts=JSON.parse(localStorage.getItem("quiz_attempts")||'{}'); 
         let today=new Date().toISOString().slice(0,10); 
         let key=`${cls}|${name}`; 
         let count=attempts[key]?.date===today?attempts[key].count:0; 
         if(count>=AI_DAILY_LIMIT){ 
-            document.getElementById("aiStartWarning").innerHTML=`⛔ 今日已达上限${AI_DAILY_LIMIT}次`; 
+            let warn=document.getElementById("aiStartWarning"); 
+            warn.classList.remove("hide"); 
+            warn.innerHTML=`⛔ 今日 AI 闯关已达上限（${AI_DAILY_LIMIT} 次），请前往 <strong>离线练习模式</strong> 进行答题。`; 
             return; 
         } 
         aiSelectedClass=cls; 
@@ -1065,18 +1014,10 @@
     }
     document.getElementById("aiStartBtn")?.addEventListener("click",aiStart);
     document.getElementById("aiPrevBtn")?.addEventListener("click",async()=>{ 
-        if(aiActive&&aiCurr>0){ 
-            aiCurr--; 
-            stopAiSpeak(); 
-            await renderAiQ(); 
-        } 
+        if(aiActive&&aiCurr>0){ aiCurr--; stopAiSpeak(); await renderAiQ(); } 
     });
     document.getElementById("aiNextBtn")?.addEventListener("click",async()=>{ 
-        if(aiActive&&aiCurr<aiQuestions.length-1){ 
-            aiCurr++; 
-            stopAiSpeak(); 
-            await renderAiQ(); 
-        } 
+        if(aiActive&&aiCurr<aiQuestions.length-1){ aiCurr++; stopAiSpeak(); await renderAiQ(); } 
     });
     document.getElementById("aiSubmitBtn")?.addEventListener("click",()=>{ 
         if(aiActive) finishAi(); 
