@@ -149,6 +149,7 @@
             <div id="offlineFeedback" class="feedback hide"></div>
             <div class="nav-buttons"><button class="nav-btn" id="offlinePrevBtn">◀ 上一题</button><button class="nav-btn" id="offlineNextBtn">下一题 ▶</button></div>
             <button class="btn" id="offlineSubmitBtn">🏆 提交答卷</button>
+            <div id="offlineSubmitTip" style="text-align:center; font-size:12px; color:#999; margin-top:8px;"></div>
         </div>
         <div id="offlineResultPanel" class="card result-card" style="display: none;">
             <div style="text-align:center;"><span style="background:#ffefc0; padding:4px 12px; border-radius:40px;">📋 闯关报告</span></div>
@@ -192,6 +193,7 @@
             <div id="aiAnswerArea"></div>
             <div class="nav-buttons"><button class="nav-btn" id="aiPrevBtn">◀ 上一题</button><button class="nav-btn" id="aiNextBtn">下一题 ▶</button></div>
             <button class="btn" id="aiSubmitBtn">🏆 提交答卷</button>
+            <div id="aiSubmitTip" style="text-align:center; font-size:12px; color:#999; margin-top:8px;"></div>
         </div>
         <div id="aiResultPanel" class="card result-card" style="display: none;">
             <div style="text-align:center;"><span style="background:#ffefc0; padding:4px 12px; border-radius:40px;">📋 闯关报告</span></div>
@@ -513,6 +515,13 @@ function getBeijingTodayStr() {
         document.getElementById("offlinePrevBtn").disabled=offlineCurr===0 || offlineSubmitted; 
         document.getElementById("offlineNextBtn").disabled=offlineCurr===offlineQuestions.length-1 || offlineSubmitted; 
         document.getElementById("offlineSubmitBtn").disabled=offlineSubmitted; 
+        var answered = 0;
+        for(var i=0;i<offlineQuestions.length;i++){ if(offlineAnswers[i]) answered++; }
+        var tipEl = document.getElementById("offlineSubmitTip");
+        if(tipEl && !offlineSubmitted){
+            tipEl.style.color = "#999";
+            tipEl.innerText = "已答 " + answered + "/" + offlineQuestions.length + " 题";
+        }
     }
 
     document.getElementById("offlineOptionsContainer")?.addEventListener("click",e=>{ 
@@ -541,10 +550,13 @@ function getBeijingTodayStr() {
         for(var i=0;i<offlineQuestions.length;i++){
             if(!offlineAnswers[i]) unanswered++;
         }
+        var tip = document.getElementById("offlineSubmitTip");
         if(unanswered > 0){
-            alert('还有 ' + unanswered + ' 道题未作答，请完成全部题目后再提交！');
+            tip.style.color = "#e53935";
+            tip.innerText = "还有 " + unanswered + " 道题未作答，请完成全部题目后再提交";
             return;
         }
+        tip.innerText = "";
         offlineSubmitted = true;
         stopOfflineTimer(); 
         offlineActive=false; 
@@ -922,6 +934,13 @@ function getBeijingTodayStr() {
         }); 
         document.getElementById("aiPrevBtn").disabled=aiCurr===0; 
         document.getElementById("aiNextBtn").disabled=aiCurr===aiQuestions.length-1; 
+        var aiAnswered = 0;
+        for(var i=0;i<aiQuestions.length;i++){ if(aiAnswers[i]) aiAnswered++; }
+        var aiTipEl = document.getElementById("aiSubmitTip");
+        if(aiTipEl && aiActive){
+            aiTipEl.style.color = "#999";
+            aiTipEl.innerText = "已答 " + aiAnswered + "/" + aiQuestions.length + " 题";
+        }
     }
     window.copyImage=function(url){ 
         fetch(url).then(r=>r.blob()).then(blob=>{ 
@@ -942,10 +961,13 @@ function getBeijingTodayStr() {
         for(var i=0;i<aiQuestions.length;i++){
             if(!aiAnswers[i]) unanswered++;
         }
+        var tip = document.getElementById("aiSubmitTip");
         if(unanswered > 0){
-            alert('还有 ' + unanswered + ' 道题未作答，请完成全部题目后再提交！');
+            tip.style.color = "#e53935";
+            tip.innerText = "还有 " + unanswered + " 道题未作答，请完成全部题目后再提交";
             return;
         }
+        tip.innerText = "";
         stopAiTimer(); 
         aiActive=false; 
         stopAiSpeak(); 
