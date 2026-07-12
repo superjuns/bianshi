@@ -536,6 +536,15 @@ function getBeijingTodayStr() {
 
     async function offlineFinish(){ 
         if(!offlineActive || offlineSubmitted) return;
+        // 检查是否全部题目都作答了
+        var unanswered = 0;
+        for(var i=0;i<offlineQuestions.length;i++){
+            if(!offlineAnswers[i]) unanswered++;
+        }
+        if(unanswered > 0){
+            alert('还有 ' + unanswered + ' 道题未作答，请完成全部题目后再提交！');
+            return;
+        }
         offlineSubmitted = true;
         stopOfflineTimer(); 
         offlineActive=false; 
@@ -928,6 +937,15 @@ function getBeijingTodayStr() {
         document.body.removeChild(a); 
     };
     async function finishAi(){ 
+        // 检查是否全部题目都作答了
+        var unanswered = 0;
+        for(var i=0;i<aiQuestions.length;i++){
+            if(!aiAnswers[i]) unanswered++;
+        }
+        if(unanswered > 0){
+            alert('还有 ' + unanswered + ' 道题未作答，请完成全部题目后再提交！');
+            return;
+        }
         stopAiTimer(); 
         aiActive=false; 
         stopAiSpeak(); 
