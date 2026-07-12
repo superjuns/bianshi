@@ -257,18 +257,21 @@
     document.getElementById("aiClearWhitelistBtn")?.addEventListener("click",async()=>{ if(!verifyPassword()) return; if(confirm("确定清空云端白名单吗？")){ if(await clearWhitelistAPI()) alert("已清空"); else alert("清空失败"); } });
 
     // ================= 离线模式排行榜 =================
-    async function fetchOfflineLeaderboard(){ try{ let r=await fetch(OFFLINE_LEADERBOARD_API); if(!r.ok) throw new Error(); let d=await r.json(); return d.submissions||[]; }catch(e){ return []; } }
+function getBeijingTodayStr() {
+        var d = new Date();
+        d.setTime(d.getTime() + 8 * 3600 * 1000);
+        return d.toISOString().slice(0, 10);
+    }
+
+        async function fetchOfflineLeaderboard(){ try{ let r=await fetch(OFFLINE_LEADERBOARD_API); if(!r.ok) throw new Error(); let d=await r.json(); return d.submissions||[]; }catch(e){ return []; } }
 
     // 获取今日每位学员的最佳成绩（去重），并按得分降序、用时升序排列
     function getOfflineTodayBestSubmissions(subs) {
-        const today = new Date();
-        const todayStr = today.toISOString().slice(0, 10);
+        const todayStr = getBeijingTodayStr();
         // 筛选今日提交
         const todayList = subs.filter(s => {
             if (!s.submitted_at) return false;
-            const subDate = new Date(s.submitted_at);
-            const subStr = subDate.toISOString().slice(0, 10);
-            return subStr === todayStr;
+            return String(s.submitted_at).slice(0, 10) === todayStr;
         });
 
         // 按班级+姓名分组，每组保留最佳（得分最高，用时最短）
@@ -330,13 +333,10 @@
     // ================= AI模式排行榜 =================
     async function fetchAILeaderboard(){ try{ let r=await fetch(AI_LEADERBOARD_API); if(!r.ok) throw new Error(); let d=await r.json(); return d.submissions||[]; }catch(e){ return []; } }
     function getAITodayFullScoreList(subs) {
-        const today = new Date();
-        const todayStr = today.toISOString().slice(0, 10);
+        const todayStr = getBeijingTodayStr();
         const fullScoreList = subs.filter(s => {
             if (!s.submitted_at) return false;
-            const subDate = new Date(s.submitted_at);
-            const subStr = subDate.toISOString().slice(0, 10);
-            if (subStr !== todayStr) return false;
+            if (String(s.submitted_at).slice(0, 10) !== todayStr) return false;
             const score = s.score || 0;
             const total = s.total || 5;
             return score === total;
