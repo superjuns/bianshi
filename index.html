@@ -332,50 +332,54 @@ function getBeijingTodayStr() {
 
     // ================= AI模式排行榜 =================
     async function fetchAILeaderboard(){ try{ let r=await fetch(AI_LEADERBOARD_API); if(!r.ok) throw new Error(); let d=await r.json(); return d.submissions||[]; }catch(e){ return []; } }
-    function getAITodayFullScoreList(subs) {
+    function getAITodayBestSubmissions(subs) {
         const todayStr = getBeijingTodayStr();
-        const fullScoreList = subs.filter(s => {
+        const todayList = subs.filter(s => {
             if (!s.submitted_at) return false;
-            if (String(s.submitted_at).slice(0, 10) !== todayStr) return false;
-            const score = s.score || 0;
-            const total = s.total || 5;
-            return score === total;
+            return String(s.submitted_at).slice(0, 10) === todayStr;
         });
-        fullScoreList.sort((a, b) => {
-            const scoreA = a.score || 0;
-            const scoreB = b.score || 0;
-            if (scoreA !== scoreB) return scoreB - scoreA;
-            const timeA = a.time || '00:00';
-            const timeB = b.time || '00:00';
-            const secondsA = timeA.split(':').reduce((acc, cur) => acc * 60 + parseInt(cur, 10), 0);
-            const secondsB = timeB.split(':').reduce((acc, cur) => acc * 60 + parseInt(cur, 10), 0);
-            return secondsA - secondsB;
-        });
-        const seen = new Map();
-        const uniqueList = [];
-        for (const item of fullScoreList) {
+
+        // 按班级+姓名分组，每组保留最佳（得分最高，用时最短）
+        const bestMap = new Map();
+        for (const item of todayList) {
             const key = `${item.class || ''}|${item.name || ''}`;
-            if (!seen.has(key)) {
-                seen.set(key, true);
-                uniqueList.push(item);
+            const score = item.score || 0;
+            const time = item.time || '00:00';
+            const seconds = time.split(':').reduce((acc, cur) => acc * 60 + parseInt(cur, 10), 0);
+            const existing = bestMap.get(key);
+            if (!existing) {
+                bestMap.set(key, { ...item, _seconds: seconds });
+            } else {
+                if (score > existing.score) {
+                    bestMap.set(key, { ...item, _seconds: seconds });
+                } else if (score === existing.score && seconds < existing._seconds) {
+                    bestMap.set(key, { ...item, _seconds: seconds });
+                }
             }
         }
-        return uniqueList;
+
+        const bestList = Array.from(bestMap.values());
+        bestList.sort((a, b) => {
+            if (a.score !== b.score) return b.score - a.score;
+            return a._seconds - b._seconds;
+        });
+
+        return bestList;
     }
     function renderAILeaderboard(subs, containerId) {
         const container = document.getElementById(containerId);
         if (!container) return;
-        const todayFull = getAITodayFullScoreList(subs);
-        if (todayFull.length === 0) {
-            container.innerHTML = '<div class="empty-rank">🎉 今日暂无满分学员，再接再厉！</div>';
+        const bestList = getAITodayBestSubmissions(subs);
+        if (bestList.length === 0) {
+            container.innerHTML = '<div class="empty-rank">📭 今日暂无提交记录，快去练习吧！</div>';
             return;
         }
-        let html = `<div class="rank-scroll-container"><table class="rank-table"><thead><tr><th>🏅</th><th>班级</th><th>姓名</th><th>得分</th><th>用时</th></tr></thead><tbody>`;
-        todayFull.forEach((item, idx) => {
+        let html = `<div class="rank-scroll-container"><table class="rank-table"><thead><tr><th>🏅</th><th>班级</th><th>姓名</th><th>最佳得分</th><th>用时</th></tr></thead><tbody>`;
+        bestList.forEach((item, idx) => {
             const medal = idx === 0 ? "🏅" : (idx === 1 ? "🥈" : (idx === 2 ? "🥉" : `${idx+1}`));
             html += `<tr><td class="rank-medal">${medal}</td><td class="rank-class">${escapeHtml(item.class || '')}</td><td class="rank-name">${escapeHtml(item.name || '')}</td><td class="rank-score">${item.score}/${item.total || 5}</td><td class="rank-time">${item.time || '--:--'}</td></tr>`;
         });
-        html += `</tbody></table></div><div class="leaderboard-footer">🎉 今日满分人数: ${todayFull.length}</div>`;
+        html += `</tbody></table></div><div class="leaderboard-footer">🏅 共 ${bestList.length} 位学员上榜</div>`;
         container.innerHTML = html;
     }
     async function refreshAILeaderboard() {
