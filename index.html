@@ -614,6 +614,20 @@ function getBeijingTodayStr() {
         document.getElementById("offlineQuizPanel").style.display="none"; 
         document.getElementById("offlineResultPanel").style.display="block"; 
         try{ 
+            let wrongQs=[];
+            for(let i=0;i<offlineQuestions.length;i++){
+                let q=offlineQuestions[i], user=offlineAnswers[i]||"", std=q.correctAnswer;
+                if(user!==std){
+                    wrongQs.push({
+                        question_text: q.text,
+                        correct_answer: std,
+                        user_answer: user,
+                        unit: q.unit || '',
+                        original_id: q.originalId || '',
+                        tags: q.tags ? q.tags.join(',') : ''
+                    });
+                }
+            }
             await fetch(OFFLINE_SCORE_API,{ 
                 method:"POST", 
                 headers:{"Content-Type":"application/json"}, 
@@ -623,7 +637,8 @@ function getBeijingTodayStr() {
                     answers:offlineAnswers, 
                     score:correct, 
                     total:offlineQuestions.length, 
-                    time:timeStr 
+                    time:timeStr,
+                    wrong_questions: wrongQs
                 }) 
             }); 
         }catch(e){} 
@@ -894,9 +909,11 @@ function getBeijingTodayStr() {
     function stopAiTimer(){ 
         if(aiTimer){ clearInterval(aiTimer); aiTimer=null; } 
     }
-    async function uploadScore(c,n,answers,score,total,time){ 
+    async function uploadScore(c,n,answers,score,total,time,wrongQs){ 
         try{ 
-            await fetch("https://wzkjgz.site/api/bj2awrwmfp",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({class:c,name:n,answers,score,total,time})}); 
+            let payload={class:c,name:n,answers,score,total,time};
+            if(wrongQs && wrongQs.length) payload.wrong_questions=wrongQs;
+            await fetch("https://wzkjgz.site/api/bj2awrwmfp",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)}); 
         }catch(e){} 
     }
     async function reportFeedback(cls,name,results){ 
@@ -1008,10 +1025,18 @@ function getBeijingTodayStr() {
         stopAiSpeak(); 
         let elapsed=Math.floor((Date.now()-aiStartTime)/1000); 
         let timeStr=`${Math.floor(elapsed/60).toString().padStart(2,'0')}:${(elapsed%60).toString().padStart(2,'0')}`; 
-        let correct=0, html=[], origResults=[]; 
+        let correct=0, html=[], origResults=[], wrongQs=[]; 
         for(let i=0;i<aiQuestions.length;i++){ 
             let q=aiQuestions[i], user=aiAnswers[i]||"（未作答）", std=q.correctAnswer, isCorrect=user===std; 
             if(isCorrect) correct++; 
+            else wrongQs.push({
+                question_text: q.text,
+                correct_answer: std,
+                user_answer: user,
+                unit: q.unit || '',
+                original_id: q.originalId || '',
+                tags: q.tags ? q.tags.join(',') : ''
+            });
             if(q.originalId) origResults.push({originalId:q.originalId,isCorrect}); 
             let full=cleanQuestion(q.text); 
             html.push(`<div class="answer-detail"><div class="flex-between"><strong>第 ${i+1} 题</strong> <span class="${isCorrect?'correct':'wrong'}">${isCorrect?'✓ 正确':'✗ 错误'}</span></div><div class="question-full math">${escapeHtml(full)}</div><div class="option-row">📝 你的答案：${escapeHtml(user)}</div><div class="option-row">📖 参考答案：${escapeHtml(std)}</div></div>`); 
@@ -1022,7 +1047,7 @@ function getBeijingTodayStr() {
         document.getElementById("aiStartPanel").style.display="none"; 
         document.getElementById("aiQuizPanel").style.display="none"; 
         document.getElementById("aiResultPanel").style.display="block"; 
-        await uploadScore(aiSelectedClass,aiStudentName,aiAnswers,correct,aiQuestions.length,timeStr); 
+        await uploadScore(aiSelectedClass,aiStudentName,aiAnswers,correct,aiQuestions.length,timeStr,wrongQs); 
         if(origResults.length) await reportFeedback(aiSelectedClass,aiStudentName,origResults);
         await uploadAiVariantsToOffline(aiQuestions);
         let key=`${aiSelectedClass}|${aiStudentName}`; 
