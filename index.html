@@ -1051,11 +1051,11 @@ function getBeijingTodayStr() {
         if(origResults.length) await reportFeedback(aiSelectedClass,aiStudentName,origResults);
         await uploadAiVariantsToOffline(aiQuestions);
         let key=`${aiSelectedClass}|${aiStudentName}`; 
-        let attempts=JSON.parse(localStorage.getItem("quiz_attempts")||'{}'); 
+        let attempts=JSON.parse(localStorage.getItem("ai_quiz_attempts")||'{}'); 
         let today=new Date().toISOString().slice(0,10); 
         if(attempts[key]?.date===today) attempts[key].count=(attempts[key].count||0)+1; 
         else attempts[key]={date:today,count:1}; 
-        localStorage.setItem("quiz_attempts",JSON.stringify(attempts)); 
+        localStorage.setItem("ai_quiz_attempts",JSON.stringify(attempts)); 
         refreshAILeaderboard(); 
     }
 
@@ -1072,7 +1072,7 @@ function getBeijingTodayStr() {
 
         const isSpecialUser = (cls === "4班" && name.trim().toLowerCase() === "huang");
         if (!isSpecialUser) {
-            let attempts=JSON.parse(localStorage.getItem("quiz_attempts")||'{}'); 
+            let attempts=JSON.parse(localStorage.getItem("ai_quiz_attempts")||'{}'); 
             let today=new Date().toISOString().slice(0,10); 
             let key=`${cls}|${name}`; 
             let count=attempts[key]?.date===today?attempts[key].count:0; 
