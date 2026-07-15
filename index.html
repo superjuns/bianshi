@@ -242,8 +242,28 @@
             if (!allowed) return false;
             localStorage.setItem('bianshi_class', normCls);
             localStorage.setItem('bianshi_name', name);
+            fillLoginForms(normCls, name);
             return true;
         } catch (e) { return false; }
+    }
+    function fillLoginForms(cls, name) {
+        if (!cls || !name) return;
+        var classValue = cls.replace(/班/g, '');
+        ['offlineClassSelect', 'aiClassSelect'].forEach(function(id) {
+            var sel = document.getElementById(id);
+            if (sel) {
+                for (var i = 0; i < sel.options.length; i++) {
+                    if (sel.options[i].value === classValue || sel.options[i].text === cls) {
+                        sel.selectedIndex = i;
+                        break;
+                    }
+                }
+            }
+        });
+        ['offlineStudentName', 'aiStudentName'].forEach(function(id) {
+            var inp = document.getElementById(id);
+            if (inp) inp.value = name;
+        });
     }
     const WHITELIST_CLEAR = "https://wzkjgz.site/api/5tmbx2o6rg/clear";
     const FEEDBACK_API = "https://wzkjgz.site/api/srnos93opr";
@@ -1168,6 +1188,12 @@ function getBeijingTodayStr() {
     })();
 
     // URL参数自动登录（平台跳转时免输入）
+    // localStorage有登录信息则自动填充表单（不自动开始答题）
+    (function() {
+        var savedCls = localStorage.getItem("bianshi_class");
+        var savedName = localStorage.getItem("bianshi_name");
+        if (savedCls && savedName) fillLoginForms(savedCls, savedName);
+    })();
     tryAutoLoginFromUrl();
 </script>
 </body>
