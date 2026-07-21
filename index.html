@@ -5,6 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
     <title>智学双模式 · 离线特训 | AI变式闯关</title>
     <script>
+// === Supabase 配置（自动生成）===
+const SUPABASE_KEY = 'sb_publishable_EAfnJgOY7VsXPdZkEcrvBA_0qkNGlyD';
+const _origFetch = window.fetch;
+window.fetch = function(url, options) {
+    options = options || {};
+    var u = (typeof url === 'string') ? url : (url && url.url) || '';
+    if (u.indexOf('bjugehxenrvaqtodjkbc.supabase.co') !== -1) {
+        options.headers = Object.assign({}, options.headers || {}, {
+            'apikey': SUPABASE_KEY,
+            'Authorization': 'Bearer ' + SUPABASE_KEY,
+            'Content-Type': 'application/json'
+        });
+    }
+    return _origFetch.call(this, url, options);
+};
+// === Supabase 配置结束 ===
+
         window.MathJax = {
             tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']], processEscapes: true },
             options: { ignoreHtmlClass: 'no-mathjax', processHtmlClass: 'math' },
@@ -213,13 +230,13 @@
 
 <script>
     // ================= 数据源 =================
-    const AI_API_BASE = "https://wzkjgz.site/api/kvgq7w0wzk";
-    const OFFLINE_API_BASE = "https://wzkjgz.site/api/nh77dub2er";
-    const OFFLINE_SCORE_API = "https://wzkjgz.site/api/ic80kof9jq";
-    const OFFLINE_LEADERBOARD_API = "https://wzkjgz.site/api/ic80kof9jq/all";
-    const AI_LEADERBOARD_API = "https://wzkjgz.site/api/bj2awrwmfp/all";
-    const WHITELIST_API_ALL = "https://wzkjgz.site/api/5tmbx2o6rg/all";
-    const WHITELIST_API = "https://wzkjgz.site/api/5tmbx2o6rg";
+    const AI_API_BASE = "https://bjugehxenrvaqtodjkbc.supabase.co/rest/v1/ai_cuotiben";
+    const OFFLINE_API_BASE = "https://bjugehxenrvaqtodjkbc.supabase.co/rest/v1/question_bank";
+    const OFFLINE_SCORE_API = "https://bjugehxenrvaqtodjkbc.supabase.co/rest/v1/scores_bianshi_offline";
+    const OFFLINE_LEADERBOARD_API = "https://bjugehxenrvaqtodjkbc.supabase.co/rest/v1/scores_bianshi_offline?select=*";
+    const AI_LEADERBOARD_API = "https://bjugehxenrvaqtodjkbc.supabase.co/rest/v1/scores_bianshi_ai?select=*";
+    const WHITELIST_API_ALL = "https://bjugehxenrvaqtodjkbc.supabase.co/rest/v1/whitelist?select=*";
+    const WHITELIST_API = "https://bjugehxenrvaqtodjkbc.supabase.co/rest/v1/whitelist";
 
     // URL参数自动登录工具函数
     function getUrlParam(name) {
@@ -265,8 +282,8 @@
             if (inp) inp.value = name;
         });
     }
-    const WHITELIST_CLEAR = "https://wzkjgz.site/api/5tmbx2o6rg/clear";
-    const FEEDBACK_API = "https://wzkjgz.site/api/srnos93opr";
+    const WHITELIST_CLEAR = "https://bjugehxenrvaqtodjkbc.supabase.co/rest/v1/whitelist?id=gte.0";
+    const FEEDBACK_API = "https://bjugehxenrvaqtodjkbc.supabase.co/rest/v1/feedback";
     const WHITELIST_PASSWORD = "ssxx050505";
     const AI_DAILY_LIMIT = 1;
     const PRESET_API_KEY = "ark-ff1505b4-a605-4fc0-9dca-3e9c0c1d690c-dbc4e";
@@ -290,7 +307,7 @@
     function parseOptions(txt){ let opts=[]; let match; let re=/([A-C])[\.\、]\s*([^A-C]*?)(?=[A-C][\.\、]|$)/gi; while((match=re.exec(txt))!==null){ let raw=match[2].trim().replace(/\s+/g,' '); if(raw.length>80) raw=raw.slice(0,80)+'…'; opts.push({letter:match[1],text:raw||`选项${match[1]}`}); } if(opts.length<3){ let lines=txt.split(/\r?\n/); for(let l of lines){ let m=l.match(/^([A-C])[\.\、]\s*(.+)/); if(m) opts.push({letter:m[1],text:m[2].trim().slice(0,80)}); } } while(opts.length<3) opts.push({letter:String.fromCharCode(65+opts.length),text:`默认选项${String.fromCharCode(65+opts.length)}`}); return opts.slice(0,3); }
 
     // ================= 白名单 =================
-    async function fetchWhitelist(){ try{ let r=await fetch(WHITELIST_API_ALL); if(!r.ok) throw new Error(); let d=await r.json(); whitelist=(d.submissions||[]).map(s=>({class:s.class||"",name:s.name||""})).filter(i=>i.class&&i.name); document.querySelectorAll(".whitelist-status").forEach(el=>el.innerHTML=`📋 白名单: ${whitelist.length} 位学生`); }catch(e){ whitelist=[]; } }
+    async function fetchWhitelist(){ try{ let r=await fetch(WHITELIST_API_ALL); if(!r.ok) throw new Error(); let d=await r.json(); whitelist=(d||[]).map(s=>({class:s.class||"",name:s.name||""})).filter(i=>i.class&&i.name); document.querySelectorAll(".whitelist-status").forEach(el=>el.innerHTML=`📋 白名单: ${whitelist.length} 位学生`); }catch(e){ whitelist=[]; } }
     function isInWhitelist(cls,name){ return whitelist.some(w=>w.class===cls.trim()&&w.name===name.trim()); }
     async function uploadWhitelist(data){ let ok=0; for(let i of data){ try{ await fetch(WHITELIST_API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({class:i.class,name:i.name,timestamp:new Date().toISOString()})}); ok++; }catch(e){} } return ok; }
     async function clearWhitelistAPI(){ try{ await fetch(WHITELIST_CLEAR,{method:"DELETE"}); whitelist=[]; document.querySelectorAll(".whitelist-status").forEach(el=>el.innerHTML="📋 白名单: 0 位学生"); return true; }catch(e){ return false; } }
@@ -320,7 +337,7 @@ function getBeijingTodayStr() {
         return d.toISOString().slice(0, 10);
     }
 
-        async function fetchOfflineLeaderboard(){ try{ let r=await fetch(OFFLINE_LEADERBOARD_API); if(!r.ok) throw new Error(); let d=await r.json(); return d.submissions||[]; }catch(e){ return []; } }
+        async function fetchOfflineLeaderboard(){ try{ let r=await fetch(OFFLINE_LEADERBOARD_API); if(!r.ok) throw new Error(); let d=await r.json(); return d||[]; }catch(e){ return []; } }
 
     // 获取今日每位学员的最佳成绩（去重），并按得分降序、用时升序排列
     function getOfflineTodayBestSubmissions(subs) {
@@ -388,7 +405,7 @@ function getBeijingTodayStr() {
     }
 
     // ================= AI模式排行榜 =================
-    async function fetchAILeaderboard(){ try{ let r=await fetch(AI_LEADERBOARD_API); if(!r.ok) throw new Error(); let d=await r.json(); return d.submissions||[]; }catch(e){ return []; } }
+    async function fetchAILeaderboard(){ try{ let r=await fetch(AI_LEADERBOARD_API); if(!r.ok) throw new Error(); let d=await r.json(); return d||[]; }catch(e){ return []; } }
     function getAITodayBestSubmissions(subs) {
         const todayStr = getBeijingTodayStr();
         const todayList = subs.filter(s => {
@@ -451,9 +468,9 @@ function getBeijingTodayStr() {
     let offlineStartTime=null, offlineTimer=null, offlineSelectedClass="", offlineStudentName="";
 
     async function loadOfflineBank(){ 
-        let r=await fetch(OFFLINE_API_BASE+"/all"); 
+        let r=await fetch(OFFLINE_API_BASE+ "?select=*"); 
         let d=await r.json(); 
-        offlineBank=(d.submissions||[]).map(s=>({
+        offlineBank=(d||[]).map(s=>({
             id:s._ip, 
             text:s.text||"", 
             correctAnswer:s.correct_answer||"A", 
@@ -780,9 +797,9 @@ function getBeijingTodayStr() {
     const VARIANT_MODES=["情境转换","数据修改","跨学科","提升难度","降低难度","综合变化"];
     function getRandomMode(){ return [VARIANT_MODES[Math.floor(Math.random()*VARIANT_MODES.length)]]; }
     async function fetchMistakes(){ 
-        let r=await fetch(AI_API_BASE+"/all"); 
+        let r=await fetch(AI_API_BASE+ "?select=*"); 
         let d=await r.json(); 
-        allMistakes=(d.submissions||[]).map((s,idx)=>({
+        allMistakes=(d||[]).map((s,idx)=>({
             _ip: s.id || s._ip || `q_${idx}`,
             text: s.text||"",
             gradeVersion: s.gradeVersion||"",
@@ -933,7 +950,7 @@ function getBeijingTodayStr() {
         try{ 
             let payload={class:c,name:n,answers,score,total,time};
             if(wrongQs && wrongQs.length) payload.wrong_questions=wrongQs;
-            await fetch("https://wzkjgz.site/api/bj2awrwmfp",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)}); 
+            await fetch("https://bjugehxenrvaqtodjkbc.supabase.co/rest/v1/scores_bianshi_ai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)}); 
         }catch(e){} 
     }
     async function reportFeedback(cls,name,results){ 
