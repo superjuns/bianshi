@@ -948,7 +948,7 @@ function getBeijingTodayStr() {
     }
     async function uploadScore(c,n,answers,score,total,time,wrongQs){ 
         try{ 
-            let payload={class:c,name:n,answers,score,total,time};
+            let payload={class:c,name:n,answers,score,total,time,submitted_at:new Date().toISOString()};
             if(wrongQs && wrongQs.length) payload.wrong_questions=wrongQs;
             await fetch("https://bjugehxenrvaqtodjkbc.supabase.co/rest/v1/scores_bianshi_ai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)}); 
         }catch(e){} 
